@@ -53,6 +53,32 @@ export const deleteSheetFn = createServerFn({ method: "POST" })
     })
   })
 
+export const getUserSheetsFn = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(async ({ context }) => {
+    const { db } = context
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    if (!session) throw new Error("Unauthorized")
+
+    const account = await db.account.findFirst({
+      where: { userId: session.user.id, providerId: "google" }
+    })
+
+    if (!account?.accessToken) throw new Error("No access token found")
+
+    const response = await fetch(
+      "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet'&pageSize=10&orderBy=modifiedTime desc&fields=files(id,name)",
+      { headers: { Authorization: `Bearer ${account.accessToken}` } }
+    )
+
+    const data = await response.json()
+
+    if (data.error) throw new Error(data.error.message)
+
+    return data.files as { id: string; name: string }[]
+  })
+
 function extractSheetId(url: string): string {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
   if (!match) throw new Error("Invalid Google Sheets URL")

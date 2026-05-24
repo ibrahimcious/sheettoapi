@@ -1,24 +1,24 @@
 import { getSessionServerFn, logoutServerFn } from '#/modules/auth/auth.api'
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { connectSheetFn, getMySheetsFn, deleteSheetFn } from '#/modules/sheets/sheets.api'
+import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn } from '#/modules/sheets/sheets.api'
 import { useState } from 'react'
-
 
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
   beforeLoad: async () => {
     const session = await getSessionServerFn()
     if (!session) {
-      throw redirect({
-        to: "/login"
-      })
+      throw redirect({ to: "/login" })
     }
     return session
   },
   loader: async () => {
-    const sheets = await getMySheetsFn()
-    return { sheets }
+    const [sheets, userSheets] = await Promise.all([
+      getMySheetsFn(),
+      getUserSheetsFn()
+    ])
+    return { sheets, userSheets }
   }
 })
 
@@ -26,25 +26,36 @@ function RouteComponent() {
   const logoutServerFnHandler = useServerFn(logoutServerFn)
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)
-  const { sheets } = Route.useLoaderData()
+  const { sheets, userSheets } = Route.useLoaderData()
   const router = useRouter()
-  const [url, setUrl] = useState('')
-  const [name, setName] = useState('')
-
   const session = Route.useRouteContext()
+
+  const [selectedSheetId, setSelectedSheetId] = useState('')
+  const [selectedSheetName, setSelectedSheetName] = useState('')
+
   async function handleLogout() {
     await logoutServerFnHandler()
   }
+
+  async function handleSelectSheet(id: string, name: string) {
+    setSelectedSheetId(id)
+    setSelectedSheetName(name)
+  }
+
   async function handleConnect() {
-    await connectSheet({ data: { sheetUrl: url, sheetName: name } })
-    setUrl('')
-    setName('')
+    if (!selectedSheetId) return
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${selectedSheetId}`
+    await connectSheet({ data: { sheetUrl, sheetName: selectedSheetName } })
+    setSelectedSheetId('')
+    setSelectedSheetName('')
     router.invalidate()
   }
+
   async function handleDelete(id: string) {
     await deleteSheet({ data: { id } })
     router.invalidate()
   }
+
   return (
     <div>
       <header className='flex justify-between p-4 bg-gray-50 border-b border-gray-200'>
@@ -60,25 +71,27 @@ function RouteComponent() {
 
       <main className='p-8'>
         <h2 className='text-xl font-bold mb-4'>Connect a Sheet</h2>
-        <div className='flex gap-2 mb-8'>
-          <input
-            placeholder='Google Sheet URL'
-            value={url}
-            onChange={e => setUrl(e.target.value)}
-            className='border p-2 w-96'
-          />
-          <input
-            placeholder='Sheet name'
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className='border p-2'
-          />
+
+        <div className='flex flex-col gap-2 mb-8'>
+          <p className='text-sm text-gray-500'>Select from your Google Sheets:</p>
+          <div className='flex flex-col gap-2'>
+            {userSheets.map((sheet) => (
+              <div
+                key={sheet.id}
+                onClick={() => handleSelectSheet(sheet.id, sheet.name)}
+                className={`border p-3 rounded cursor-pointer hover:bg-gray-50 ${selectedSheetId === sheet.id ? 'border-blue-600 bg-blue-50' : ''}`}
+              >
+                {sheet.name}
+              </div>
+            ))}
+          </div>
           <button
             type='button'
             onClick={handleConnect}
-            className='bg-blue-600 text-white px-4 py-2'
+            disabled={!selectedSheetId}
+            className='bg-blue-600 text-white px-4 py-2 w-fit disabled:opacity-50'
           >
-            Connect
+            Connect Selected Sheet
           </button>
         </div>
 
@@ -88,7 +101,7 @@ function RouteComponent() {
             <div key={sheet.id} className='border p-4 rounded'>
               <p className='font-bold'>{sheet.sheetName}</p>
               <p className='text-sm text-gray-500'>
-                Endpoint: https://sheettoapi.net/api/{sheet.slug}
+                Endpoint: https://sheettoapi.net/api/sheet/{sheet.slug}
               </p>
               <p className='text-sm text-gray-500'>
                 API Key: {sheet.apiKey}
