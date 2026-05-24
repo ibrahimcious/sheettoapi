@@ -7,32 +7,28 @@ export const Route = createFileRoute('/login')({
 })
 
 function RouteComponent() {
-  //const loginServerFnHandler = useServerFn(loginServerFn)
-  const loginWithGoogleServerHandler = useServerFn(loginWithGoogleServerFn)
-  //const [loginData, setLoginData] = useState({
-  // email: "",
-  //password: ""
-  // })
-  {/* async function handleLoginUser() {
-    await loginServerFnHandler({
-      data: {
-        email: loginData.email,
-        password: loginData.password,
-      }
-    })
-  }
-  */}
-  async function handleLoginWithGoogle() {
-    await loginWithGoogleServerHandler()
-  }
+  const loginWithGoogle = useServerFn(loginWithGoogleServerFn)
+
   return (
-    <div>
-      <div>
-        {/*<input className='p-2 rounded-lg border border-gray-400 shadow-lg' placeholder='Email' type='email' onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
-        <input className='p-2 rounded-lg text-white font-medium border-gray-900 shadow-lg' placeholder='Password' type='password' onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
-        <button type='button' onClick={handleLoginUser}>Login</button>
-        */}
-        <button className='p-2 rounded-lg bg-blue-900 text-white font-medium shadow-lg' type='button' onClick={handleLoginWithGoogle}>Continue with Google</button>
+    <div className="min-h-screen flex flex-col items-center justify-center p-8">
+      <div className="max-w-sm w-full text-center">
+        <div className="text-4xl mb-4">📊</div>
+        <h1 className="text-2xl font-medium mb-2">Welcome back</h1>
+        <p className="text-gray-500 mb-8 text-sm">
+          Sign in to manage your Sheet API endpoints
+        </p>
+        <button
+          type="button"
+          onClick={() => loginWithGoogle()}
+          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-2.5 hover:bg-gray-50 transition-colors"
+        >
+          <img
+            src="https://www.google.com/favicon.ico"
+            alt="Google"
+            className="w-4 h-4"
+          />
+          <span className="font-medium text-sm">Continue with Google</span>
+        </button>
       </div>
     </div>
   )

@@ -6,6 +6,8 @@ import { useState } from 'react'
 
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
+
+  // Protect the route — redirect to login if user is not authenticated
   beforeLoad: async () => {
     const session = await getSessionServerFn()
     if (!session) {
@@ -13,23 +15,32 @@ export const Route = createFileRoute('/dashboard')({
     }
     return session
   },
+
+  // Load data in parallel before rendering the component
   loader: async () => {
     const [sheets, userSheets] = await Promise.all([
-      getMySheetsFn(),
-      getUserSheetsFn()
+      getMySheetsFn(),      // fetch user's connected sheets from DB
+      getUserSheetsFn()     // fetch user's 10 latest sheets from Google Drive
     ])
     return { sheets, userSheets }
   }
 })
 
 function RouteComponent() {
+  // Server functions wrapped for client-side use
   const logoutServerFnHandler = useServerFn(logoutServerFn)
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)
+
+  // Data from loader
   const { sheets, userSheets } = Route.useLoaderData()
-  const router = useRouter()
+
+  // Session from beforeLoad return value
   const session = Route.useRouteContext()
 
+  const router = useRouter()
+
+  // Track which sheet the user has selected from the list
   const [selectedSheetId, setSelectedSheetId] = useState('')
   const [selectedSheetName, setSelectedSheetName] = useState('')
 
@@ -37,20 +48,30 @@ function RouteComponent() {
     await logoutServerFnHandler()
   }
 
+  // Set selected sheet when user clicks on a sheet from the list
   async function handleSelectSheet(id: string, name: string) {
     setSelectedSheetId(id)
     setSelectedSheetName(name)
   }
 
+  // Connect the selected sheet — creates a SheetConnection in DB
   async function handleConnect() {
     if (!selectedSheetId) return
+
+    // Build the Google Sheet URL from the sheet ID
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${selectedSheetId}`
+
     await connectSheet({ data: { sheetUrl, sheetName: selectedSheetName } })
+
+    // Reset selection
     setSelectedSheetId('')
     setSelectedSheetName('')
+
+    // Refresh the page data to show the newly connected sheet
     router.invalidate()
   }
 
+  // Delete a sheet connection from DB
   async function handleDelete(id: string) {
     await deleteSheet({ data: { id } })
     router.invalidate()
@@ -58,9 +79,11 @@ function RouteComponent() {
 
   return (
     <div>
+      {/* Header with user info and logout */}
       <header className='flex justify-between p-4 bg-gray-50 border-b border-gray-200'>
         <div>Sheet to API</div>
         <div className='flex gap-2 items-center'>
+          {/* Avatar — first letter of user's name */}
           <div className='size-6 bg-blue-600 text-white rounded-full flex justify-center items-center'>
             {session?.user.name.charAt(0)}
           </div>
@@ -70,21 +93,27 @@ function RouteComponent() {
       </header>
 
       <main className='p-8'>
+        {/* Section 1: Connect a new sheet */}
         <h2 className='text-xl font-bold mb-4'>Connect a Sheet</h2>
 
         <div className='flex flex-col gap-2 mb-8'>
           <p className='text-sm text-gray-500'>Select from your Google Sheets:</p>
+
+          {/* List of user's Google Sheets fetched from Drive API */}
           <div className='flex flex-col gap-2'>
             {userSheets.map((sheet) => (
               <div
                 key={sheet.id}
                 onClick={() => handleSelectSheet(sheet.id, sheet.name)}
+                // Highlight selected sheet
                 className={`border p-3 rounded cursor-pointer hover:bg-gray-50 ${selectedSheetId === sheet.id ? 'border-blue-600 bg-blue-50' : ''}`}
               >
                 {sheet.name}
               </div>
             ))}
           </div>
+
+          {/* Disabled until a sheet is selected */}
           <button
             type='button'
             onClick={handleConnect}
@@ -95,17 +124,23 @@ function RouteComponent() {
           </button>
         </div>
 
+        {/* Section 2: List of connected sheets with their endpoints */}
         <h2 className='text-xl font-bold mb-4'>My Sheets</h2>
         <div className='flex flex-col gap-4'>
           {sheets.map(sheet => (
             <div key={sheet.id} className='border p-4 rounded'>
               <p className='font-bold'>{sheet.sheetName}</p>
+
+              {/* Public API endpoint URL */}
               <p className='text-sm text-gray-500'>
                 Endpoint: https://sheettoapi.net/api/sheet/{sheet.slug}
               </p>
+
+              {/* API key for authentication */}
               <p className='text-sm text-gray-500'>
                 API Key: {sheet.apiKey}
               </p>
+
               <button
                 type='button'
                 onClick={() => handleDelete(sheet.id)}
@@ -115,6 +150,8 @@ function RouteComponent() {
               </button>
             </div>
           ))}
+
+          {/* Empty state */}
           {sheets.length === 0 && (
             <p className='text-gray-400'>No sheets connected yet.</p>
           )}
