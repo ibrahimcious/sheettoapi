@@ -8,6 +8,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout code
@@ -26,6 +29,8 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/ibrahimcious/sheettoapi:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/ibrahimcious/sheettoapi
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
