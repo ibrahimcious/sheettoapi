@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: tanstack
+      POSTGRES_PASSWORD: tanstack
+      POSTGRES_DB: tanstack
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.data:/var/lib/postgresql/data
