@@ -79,6 +79,15 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           )
         }
 
+        // Validate API key from request header
+        const apiKey = request.headers.get("X-API-Key")
+        if (!apiKey || apiKey !== sheet.apiKey) {
+          return new Response(
+            JSON.stringify({ error: "Invalid API key" }),
+            { status: 401, headers: { "Content-Type": "application/json" } }
+          )
+        }
+
         // Determine which tab to fetch — from query param or first tab
         const tab = await getSheetTab(sheet.sheetId, tabParam)
 
