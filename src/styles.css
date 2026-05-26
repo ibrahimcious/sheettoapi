@@ -1,5 +1,19 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
 @import "tailwindcss";
+
+@theme {
+  --color-canvas: #090909;
+  --color-surface-1: #141414;
+  --color-surface-2: #1c1c1c;
+  --color-hairline: #262626;
+  --color-hairline-soft: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #999999;
+  --color-accent: #0099ff;
+  --color-success: #22c55e;
+}
 
 * {
   box-sizing: border-box;
@@ -13,5 +27,10 @@ body,
 
 body {
   margin: 0;
+  background-color: #090909;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'cv01' 1, 'cv05' 1, 'cv09' 1, 'cv11' 1, 'ss03' 1, 'ss07' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-
