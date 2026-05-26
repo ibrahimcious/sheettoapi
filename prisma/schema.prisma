@@ -19,13 +19,13 @@ model SheetConnection {
   sheetName  String
   slug       String    @unique
   apiKey     String    @unique @default(uuid())
-  tabName    String? // optional, default to first tab
+  tabName    String    @default("") // "" means use first tab
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, sheetId])
+  @@unique([userId, sheetId, tabName])
 }
 
 model User {

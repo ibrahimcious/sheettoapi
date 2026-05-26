@@ -1,73 +1,54 @@
-import { getSessionServerFn, logoutServerFn } from '#/modules/auth/auth.api'
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn } from '#/modules/sheets/sheets.api'
 import { useEffect, useState } from 'react'
+import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
 
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
 
-  // Protect the route — redirect to login if user is not authenticated
   beforeLoad: async () => {
-    const session = await getSessionServerFn()
-    if (!session) {
-      throw redirect({ to: "/login" })
-    }
+    const session = await getSessionFn()
+    if (!session) throw redirect({ to: "/login" })
     return session
   },
 
-  // Load data in parallel before rendering the component
   loader: async () => {
     const [sheets, userSheets] = await Promise.all([
-      getMySheetsFn(),      // fetch user's connected sheets from DB
-      getUserSheetsFn()     // fetch user's 10 latest sheets from Google Drive
+      getMySheetsFn(),
+      getUserSheetsFn(),
     ])
-    return { sheets, userSheets }
+    const baseUrl = process.env.APP_URL ?? 'https://sheettoapi.net'
+    return { sheets, userSheets, baseUrl }
   }
 })
 
-function RouteComponent() {
-  // Server functions wrapped for client-side use
-  const logoutServerFnHandler = useServerFn(logoutServerFn)
+export function RouteComponent() {
+  const logout = useServerFn(logoutFn)
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)
+  const getSheetTabs = useServerFn(getSheetTabsFn)
+
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState('')
-
-
-  // Data from loader
-  const { sheets, userSheets } = Route.useLoaderData()
-
-  // Session from beforeLoad return value
-  const session = Route.useRouteContext()
-
-  const router = useRouter()
-
-  // Track which sheet tab the user select
-  const getSheetTabs = useServerFn(getSheetTabsFn)
   const [tabs, setTabs] = useState<string[]>([])
   const [selectedTab, setSelectedTab] = useState('')
-
-  // Track which sheet the user has selected from the list
   const [selectedSheetId, setSelectedSheetId] = useState('')
   const [selectedSheetName, setSelectedSheetName] = useState('')
+  const [copied, setCopied] = useState<string | null>(null)
 
-  async function handleLogout() {
-    await logoutServerFnHandler()
-  }
+  const { sheets, userSheets, baseUrl } = Route.useLoaderData()
+  const session = Route.useRouteContext()
+  const router = useRouter()
 
-  // Set selected sheet when user clicks on a sheet from the list
   async function handleSelectSheet(id: string, name: string) {
     setSelectedSheetId(id)
     setSelectedSheetName(name)
     setSelectedTab('')
-
-    // Fetch tabs for selected sheet
     const sheetTabs = await getSheetTabs({ data: { sheetId: id } })
     setTabs(sheetTabs)
   }
 
-  // Connect the selected sheet — creates a SheetConnection in DB
   async function handleConnect() {
     if (!selectedSheetId) return
     setIsConnecting(true)
@@ -79,7 +60,6 @@ function RouteComponent() {
       setSelectedSheetName('')
       setSelectedTab('')
       setTabs([])
-
       router.invalidate()
     } catch (e) {
       setError('Failed to connect sheet. Please try again.')
@@ -87,56 +67,48 @@ function RouteComponent() {
       setIsConnecting(false)
     }
   }
-  // Delete a sheet connection from DB
+
   async function handleDelete(id: string) {
+    if (!window.confirm('Delete this sheet connection? This cannot be undone.')) return
     await deleteSheet({ data: { id } })
     router.invalidate()
   }
 
-  // Copy text to clipboard and notify user
-  async function handleCopy(text: string) {
+  async function handleCopy(text: string, key: string) {
     await navigator.clipboard.writeText(text)
-    alert('Copied!')
+    setCopied(key)
+    setTimeout(() => setCopied(null), 2000)
   }
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      router.invalidate()
-    }, 30000)
-
+    const interval = setInterval(() => router.invalidate(), 30000)
     return () => clearInterval(interval)
   }, [])
 
   return (
     <div>
-      {/* Header with user info and logout */}
       <header className='flex justify-between p-4 bg-gray-50 border-b border-gray-200'>
         <div>Sheet to API</div>
         <div className='flex gap-2 items-center'>
-          {/* Avatar — first letter of user's name */}
           <div className='size-6 bg-blue-600 text-white rounded-full flex justify-center items-center'>
             {session?.user.name.charAt(0)}
           </div>
           <div>{session?.user.name}</div>
-          <button type='button' onClick={handleLogout}>Logout</button>
+          <button type='button' onClick={() => logout()}>Logout</button>
         </div>
       </header>
 
       <main className='p-8'>
-        {/* Section 1: Connect a new sheet */}
         <h2 className='text-xl font-bold mb-4'>Connect a Sheet</h2>
 
         <div className='flex flex-col gap-2 mb-8'>
           <p className='text-sm text-gray-500'>Select from your Google Sheets:</p>
 
-          {/* List of user's Google Sheets fetched from Drive API */}
           <div className='flex flex-col gap-2'>
             {userSheets.map((sheet) => (
               <div
                 key={sheet.id}
                 onClick={() => handleSelectSheet(sheet.id, sheet.name)}
-                // Highlight selected sheet
                 className={`border p-3 rounded cursor-pointer hover:bg-gray-50 ${selectedSheetId === sheet.id ? 'border-blue-600 bg-blue-50' : ''}`}
               >
                 {sheet.name}
@@ -144,7 +116,6 @@ function RouteComponent() {
             ))}
           </div>
 
-          {/* Tab selector — shown after user selects a sheet */}
           {tabs.length > 0 && (
             <div className='flex flex-col gap-2'>
               <p className='text-sm text-gray-500'>Select tab:</p>
@@ -163,7 +134,6 @@ function RouteComponent() {
             </div>
           )}
 
-          {/* Disabled until a sheet is selected */}
           <button
             type='button'
             onClick={handleConnect}
@@ -172,39 +142,33 @@ function RouteComponent() {
           >
             {isConnecting ? 'Connecting...' : 'Connect Selected Sheet'}
           </button>
-          {/* Error message */}
-          {error && (
-            <p className='text-red-500 text-sm'>{error}</p>
-          )}
+
+          {error && <p className='text-red-500 text-sm'>{error}</p>}
         </div>
 
-        {/* Section 2: List of connected sheets with their endpoints */}
         <h2 className='text-xl font-bold mb-4'>My Sheets</h2>
         <div className='flex flex-col gap-4'>
           {sheets.map(sheet => (
             <div key={sheet.id} className='border p-4 rounded'>
               <p className='font-bold'>{sheet.sheetName}</p>
 
-              {/* Show which tab is being used */}
               <p className='text-sm text-gray-400'>
-                Tab: {sheet.tabName ?? 'First tab'}
+                Tab: {sheet.tabName || 'First tab'}
               </p>
 
-              {/* Public API endpoint URL with copy button */}
               <div className='flex items-center gap-2 mt-2'>
                 <p className='text-sm text-gray-500'>
-                  Endpoint: https://sheettoapi.net/api/sheet/{sheet.slug}
+                  Endpoint: {baseUrl}/api/sheet/{sheet.slug}
                 </p>
                 <button
                   type='button'
-                  onClick={() => handleCopy(`https://sheettoapi.net/api/sheet/${sheet.slug}`)}
+                  onClick={() => handleCopy(`${baseUrl}/api/sheet/${sheet.slug}`, `${sheet.id}-endpoint`)}
                   className='text-blue-600 text-xs'
                 >
-                  Copy
+                  {copied === `${sheet.id}-endpoint` ? 'Copied!' : 'Copy'}
                 </button>
               </div>
 
-              {/* Last used timestamp */}
               <p className='text-sm text-gray-500 mt-1'>
                 Last used: {sheet.lastUsedAt
                   ? new Date(sheet.lastUsedAt).toLocaleDateString('en-US', {
@@ -217,17 +181,16 @@ function RouteComponent() {
                   : 'Never'}
               </p>
 
-              {/* API key for authentication with copy button */}
               <div className='flex items-center gap-2 mt-1'>
                 <p className='text-sm text-gray-500'>
                   API Key: {sheet.apiKey}
                 </p>
                 <button
                   type='button'
-                  onClick={() => handleCopy(sheet.apiKey)}
+                  onClick={() => handleCopy(sheet.apiKey, `${sheet.id}-apikey`)}
                   className='text-blue-600 text-xs'
                 >
-                  Copy
+                  {copied === `${sheet.id}-apikey` ? 'Copied!' : 'Copy'}
                 </button>
               </div>
 
@@ -241,7 +204,6 @@ function RouteComponent() {
             </div>
           ))}
 
-          {/* Empty state */}
           {sheets.length === 0 && (
             <p className='text-gray-400'>No sheets connected yet.</p>
           )}

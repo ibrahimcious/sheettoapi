@@ -1,4 +1,4 @@
-import { loginWithGoogleServerFn } from '#/modules/auth/auth.api'
+import { loginWithGoogleFn } from '#/modules/auth/auth.api'
 import { createFileRoute } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 
@@ -7,7 +7,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function RouteComponent() {
-  const loginWithGoogle = useServerFn(loginWithGoogleServerFn)
+  const loginWithGoogle = useServerFn(loginWithGoogleFn)
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">
