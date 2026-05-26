@@ -1,4 +1,4 @@
-import { registerServerFn } from '#/modules/auth/auth.api'
+import { registerFn } from '#/modules/auth/auth.api'
 import { createFileRoute } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
@@ -8,14 +8,14 @@ export const Route = createFileRoute('/register')({
 })
 
 function RouteComponent() {
-  const registerServerFnHandler = useServerFn(registerServerFn)
+  const register = useServerFn(registerFn)
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
     password: ""
   })
   async function handleRegisterUser() {
-    await registerServerFnHandler({
+    await register({
       data: {
         name: registerData.name,
         email: registerData.email,
