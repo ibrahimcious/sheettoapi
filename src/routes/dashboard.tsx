@@ -1,8 +1,8 @@
 import { getSessionServerFn, logoutServerFn } from '#/modules/auth/auth.api'
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn } from '#/modules/sheets/sheets.api'
-import { useState } from 'react'
+import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn } from '#/modules/sheets/sheets.api'
+import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
@@ -43,6 +43,11 @@ function RouteComponent() {
 
   const router = useRouter()
 
+  // Track which sheet tab the user select
+  const getSheetTabs = useServerFn(getSheetTabsFn)
+  const [tabs, setTabs] = useState<string[]>([])
+  const [selectedTab, setSelectedTab] = useState('')
+
   // Track which sheet the user has selected from the list
   const [selectedSheetId, setSelectedSheetId] = useState('')
   const [selectedSheetName, setSelectedSheetName] = useState('')
@@ -55,6 +60,11 @@ function RouteComponent() {
   async function handleSelectSheet(id: string, name: string) {
     setSelectedSheetId(id)
     setSelectedSheetName(name)
+    setSelectedTab('')
+
+    // Fetch tabs for selected sheet
+    const sheetTabs = await getSheetTabs({ data: { sheetId: id } })
+    setTabs(sheetTabs)
   }
 
   // Connect the selected sheet — creates a SheetConnection in DB
@@ -64,9 +74,12 @@ function RouteComponent() {
     setError('')
     try {
       const sheetUrl = `https://docs.google.com/spreadsheets/d/${selectedSheetId}`
-      await connectSheet({ data: { sheetUrl, sheetName: selectedSheetName } })
+      await connectSheet({ data: { sheetUrl, sheetName: selectedSheetName, tabName: selectedTab || undefined } })
       setSelectedSheetId('')
       setSelectedSheetName('')
+      setSelectedTab('')
+      setTabs([])
+
       router.invalidate()
     } catch (e) {
       setError('Failed to connect sheet. Please try again.')
@@ -85,6 +98,15 @@ function RouteComponent() {
     await navigator.clipboard.writeText(text)
     alert('Copied!')
   }
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.invalidate()
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div>
@@ -121,6 +143,25 @@ function RouteComponent() {
               </div>
             ))}
           </div>
+
+          {/* Tab selector — shown after user selects a sheet */}
+          {tabs.length > 0 && (
+            <div className='flex flex-col gap-2'>
+              <p className='text-sm text-gray-500'>Select tab:</p>
+              <div className='flex gap-2 flex-wrap'>
+                {tabs.map(tab => (
+                  <button
+                    key={tab}
+                    type='button'
+                    onClick={() => setSelectedTab(tab)}
+                    className={`border px-3 py-1.5 rounded text-sm ${selectedTab === tab ? 'border-blue-600 bg-blue-50 text-blue-600' : 'hover:bg-gray-50'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Disabled until a sheet is selected */}
           <button

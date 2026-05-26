@@ -19,6 +19,7 @@ model SheetConnection {
   sheetName  String
   slug       String    @unique
   apiKey     String    @unique @default(uuid())
+  tabName    String? // optional, default to first tab
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 

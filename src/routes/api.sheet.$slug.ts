@@ -94,8 +94,8 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         }
 
         // Determine which tab to fetch — from query param or first tab
-        const tab = await getSheetTab(sheet.sheetId, tabParam)
-
+        // Use stored tabName, or query param, or auto-detect first tab
+        const tab = tabParam ?? sheet.tabName ?? await getSheetTab(sheet.sheetId, undefined)
         // Fetch sheet data from Google Sheets API
         const response = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`

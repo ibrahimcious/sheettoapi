@@ -3,6 +3,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 import { dbMiddleware } from "#/shared/middleware/db.middleware"
 import { ConnectSheetSchema, DeleteSheetSchema } from "./sheets.schema"
 import { auth } from "#/modules/auth/auth.utils"
+import z from "zod"
 
 // Connect a Google Sheet — saves a new SheetConnection to DB
 // Extracts the sheet ID from the URL, generates a slug and API key
@@ -31,6 +32,8 @@ export const connectSheetFn = createServerFn({ method: "POST" })
         sheetId,
         sheetName: data.sheetName,
         slug,
+        tabName: data.tabName ?? null,
+
       },
     })
   })
@@ -124,3 +127,15 @@ function generateSlug(name: string): string {
     crypto.randomUUID().slice(0, 6) // add random suffix for uniqueness
   )
 }
+
+export const getSheetTabsFn = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(z.object({ sheetId: z.string() }))
+  .handler(async ({ data }) => {
+    const metaResponse = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${data.sheetId}?key=${process.env.GOOGLE_API_KEY}`
+    )
+    const meta = await metaResponse.json()
+    if (!meta.sheets) return []
+    return meta.sheets.map((s: any) => s.properties.title) as string[]
+  })
