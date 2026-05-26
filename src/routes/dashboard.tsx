@@ -31,6 +31,9 @@ function RouteComponent() {
   const logoutServerFnHandler = useServerFn(logoutServerFn)
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [error, setError] = useState('')
+
 
   // Data from loader
   const { sheets, userSheets } = Route.useLoaderData()
@@ -57,24 +60,30 @@ function RouteComponent() {
   // Connect the selected sheet — creates a SheetConnection in DB
   async function handleConnect() {
     if (!selectedSheetId) return
-
-    // Build the Google Sheet URL from the sheet ID
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${selectedSheetId}`
-
-    await connectSheet({ data: { sheetUrl, sheetName: selectedSheetName } })
-
-    // Reset selection
-    setSelectedSheetId('')
-    setSelectedSheetName('')
-
-    // Refresh the page data to show the newly connected sheet
-    router.invalidate()
+    setIsConnecting(true)
+    setError('')
+    try {
+      const sheetUrl = `https://docs.google.com/spreadsheets/d/${selectedSheetId}`
+      await connectSheet({ data: { sheetUrl, sheetName: selectedSheetName } })
+      setSelectedSheetId('')
+      setSelectedSheetName('')
+      router.invalidate()
+    } catch (e) {
+      setError('Failed to connect sheet. Please try again.')
+    } finally {
+      setIsConnecting(false)
+    }
   }
-
   // Delete a sheet connection from DB
   async function handleDelete(id: string) {
     await deleteSheet({ data: { id } })
     router.invalidate()
+  }
+
+  // Copy text to clipboard and notify user
+  async function handleCopy(text: string) {
+    await navigator.clipboard.writeText(text)
+    alert('Copied!')
   }
 
   return (
@@ -117,11 +126,15 @@ function RouteComponent() {
           <button
             type='button'
             onClick={handleConnect}
-            disabled={!selectedSheetId}
+            disabled={!selectedSheetId || isConnecting}
             className='bg-blue-600 text-white px-4 py-2 w-fit disabled:opacity-50'
           >
-            Connect Selected Sheet
+            {isConnecting ? 'Connecting...' : 'Connect Selected Sheet'}
           </button>
+          {/* Error message */}
+          {error && (
+            <p className='text-red-500 text-sm'>{error}</p>
+          )}
         </div>
 
         {/* Section 2: List of connected sheets with their endpoints */}
@@ -131,15 +144,33 @@ function RouteComponent() {
             <div key={sheet.id} className='border p-4 rounded'>
               <p className='font-bold'>{sheet.sheetName}</p>
 
-              {/* Public API endpoint URL */}
-              <p className='text-sm text-gray-500'>
-                Endpoint: https://sheettoapi.net/api/sheet/{sheet.slug}
-              </p>
+              {/* Public API endpoint URL with copy button */}
+              <div className='flex items-center gap-2 mt-2'>
+                <p className='text-sm text-gray-500'>
+                  Endpoint: https://sheettoapi.net/api/sheet/{sheet.slug}
+                </p>
+                <button
+                  type='button'
+                  onClick={() => handleCopy(`https://sheettoapi.net/api/sheet/${sheet.slug}`)}
+                  className='text-blue-600 text-xs'
+                >
+                  Copy
+                </button>
+              </div>
 
-              {/* API key for authentication */}
-              <p className='text-sm text-gray-500'>
-                API Key: {sheet.apiKey}
-              </p>
+              {/* API key for authentication with copy button */}
+              <div className='flex items-center gap-2 mt-1'>
+                <p className='text-sm text-gray-500'>
+                  API Key: {sheet.apiKey}
+                </p>
+                <button
+                  type='button'
+                  onClick={() => handleCopy(sheet.apiKey)}
+                  className='text-blue-600 text-xs'
+                >
+                  Copy
+                </button>
+              </div>
 
               <button
                 type='button'
