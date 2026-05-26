@@ -185,6 +185,11 @@ function RouteComponent() {
             <div key={sheet.id} className='border p-4 rounded'>
               <p className='font-bold'>{sheet.sheetName}</p>
 
+              {/* Show which tab is being used */}
+              <p className='text-sm text-gray-400'>
+                Tab: {sheet.tabName ?? 'First tab'}
+              </p>
+
               {/* Public API endpoint URL with copy button */}
               <div className='flex items-center gap-2 mt-2'>
                 <p className='text-sm text-gray-500'>
