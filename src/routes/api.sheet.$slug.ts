@@ -79,6 +79,11 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           )
         }
 
+        // Update lastUsedAt timestamp every time endpoint is hit
+        await prisma.sheetConnection.update({
+          where: { slug },
+          data: { lastUsedAt: new Date() },
+        })
         // Validate API key from request header
         const apiKey = request.headers.get("X-API-Key")
         if (!apiKey || apiKey !== sheet.apiKey) {

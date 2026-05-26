@@ -158,6 +158,19 @@ function RouteComponent() {
                 </button>
               </div>
 
+              {/* Last used timestamp */}
+              <p className='text-sm text-gray-500 mt-1'>
+                Last used: {sheet.lastUsedAt
+                  ? new Date(sheet.lastUsedAt).toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                  : 'Never'}
+              </p>
+
               {/* API key for authentication with copy button */}
               <div className='flex items-center gap-2 mt-1'>
                 <p className='text-sm text-gray-500'>
