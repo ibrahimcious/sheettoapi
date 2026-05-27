@@ -43,6 +43,11 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const { slug } = params
         const url = new URL(request.url)
         const tabParam = url.searchParams.get("tab") ?? undefined
+
+        // Pagination params — default page 1, limit 10
+        const page = parseInt(url.searchParams.get("page") ?? "1")
+        const limit = parseInt(url.searchParams.get("limit") ?? "10")
+
         const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
         if (!sheet) {
           return new Response(
@@ -50,6 +55,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
             { status: 404, headers: { "Content-Type": "application/json" } }
           )
         }
+
         const apiKey = request.headers.get("X-API-Key")
         if (!apiKey || apiKey !== sheet.apiKey) {
           return new Response(
@@ -57,26 +63,47 @@ export const Route = createFileRoute("/api/sheet/$slug")({
             { status: 401, headers: { "Content-Type": "application/json" } }
           )
         }
+
         await prisma.sheetConnection.update({
           where: { slug },
           data: { lastUsedAt: new Date() },
         })
+
         const tab = tabParam ?? (sheet.tabName || null) ?? await getSheetTab(sheet.sheetId, undefined)
         const response = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
         const data = await response.json()
+
         if (data.error) {
           return new Response(
             JSON.stringify({ error: "Failed to fetch sheet data", detail: data.error.message }),
             { status: 502, headers: { "Content-Type": "application/json" } }
           )
         }
-        const result = rowsToJson(data.values ?? [])
-        return new Response(JSON.stringify(result), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
+
+        const allRows = rowsToJson(data.values ?? [])
+
+        // Paginate results
+        const total = allRows.length
+        const totalPages = Math.ceil(total / limit)
+        const start = (page - 1) * limit
+        const paginatedRows = allRows.slice(start, start + limit)
+
+        return new Response(
+          JSON.stringify({
+            data: paginatedRows,
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages,
+              hasNext: page < totalPages,
+              hasPrev: page > 1,
+            }
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
       },
 
       POST: async ({ request, params }) => {
