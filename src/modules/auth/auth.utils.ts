@@ -18,7 +18,7 @@ export const auth = betterAuth({
         "openid",
         "email",
         "profile",
-        "https://www.googleapis.com/auth/spreadsheets.readonly",
+        "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive.readonly"
       ],
       accessType: "offline"
