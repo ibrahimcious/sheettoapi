@@ -38,8 +38,10 @@ export const Route = createFileRoute("/api/sheet/$slug")({
 
         const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1)
         const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "10") || 10))
+        const sortBy = url.searchParams.get("sort") ?? undefined
+        const order = url.searchParams.get("order") === "desc" ? "desc" : "asc"
 
-        const reservedParams = ['page', 'limit', 'tab']
+        const reservedParams = ['page', 'limit', 'tab', 'sort', 'order']
         const filters: Record<string, string> = {}
         url.searchParams.forEach((value, key) => {
           if (!reservedParams.includes(key)) filters[key] = value
@@ -74,10 +76,17 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           )
           : allRows
 
-        const total = filteredRows.length
+        const sortedRows = sortBy
+          ? [...filteredRows].sort((a, b) => {
+              const cmp = (a[sortBy] ?? "").localeCompare(b[sortBy] ?? "", undefined, { numeric: true, sensitivity: 'base' })
+              return order === "desc" ? -cmp : cmp
+            })
+          : filteredRows
+
+        const total = sortedRows.length
         const totalPages = Math.ceil(total / limit)
         const start = (page - 1) * limit
-        const paginatedRows = filteredRows.slice(start, start + limit)
+        const paginatedRows = sortedRows.slice(start, start + limit)
 
         return json({
           data: paginatedRows,

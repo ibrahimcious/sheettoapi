@@ -50,7 +50,9 @@ function DocsPage() {
             title="Query parameters"
             params={[
               { name: 'page', type: 'number', default: '1', desc: 'Page number' },
-              { name: 'limit', type: 'number', default: '10', desc: 'Rows per page' },
+              { name: 'limit', type: 'number', default: '10', desc: 'Rows per page (max 100)' },
+              { name: 'sort', type: 'string', default: '—', desc: 'Column name to sort by' },
+              { name: 'order', type: 'string', default: 'asc', desc: 'Sort direction: asc or desc' },
               { name: 'tab', type: 'string', default: 'first tab', desc: 'Sheet tab name' },
               { name: '[column]', type: 'string', default: '—', desc: 'Filter by any column value' },
             ]}
