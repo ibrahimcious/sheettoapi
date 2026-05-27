@@ -5,16 +5,16 @@ export const Route = createFileRoute('/')({ component: Home })
 
 const features = [
   {
+    title: 'Full CRUD',
+    description: 'GET, POST, PUT, and DELETE. Read rows, append new entries, update by row number, or delete permanently.',
+  },
+  {
+    title: 'Filter & paginate',
+    description: 'Query by any column value and paginate results with standard params — works like a real database API.',
+  },
+  {
     title: 'No backend needed',
     description: 'Connect your sheet and get a live endpoint instantly — no server, no code, no config.',
-  },
-  {
-    title: 'Always live',
-    description: 'Data updates the moment you edit your sheet. No re-deploys, no webhooks to wire up.',
-  },
-  {
-    title: 'Any language',
-    description: 'Standard REST endpoint. Fetch it from JavaScript, Python, curl, or anything with HTTP.',
   },
 ]
 
