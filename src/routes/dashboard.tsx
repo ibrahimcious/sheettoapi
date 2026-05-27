@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useRouter, Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn } from '#/modules/sheets/sheets.api'
+import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn, rotateApiKeyFn } from '#/modules/sheets/sheets.api'
 import { useState } from 'react'
 import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
 import { Navbar } from '#/components/Navbar'
@@ -29,6 +29,7 @@ export function RouteComponent() {
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)
   const getSheetTabs = useServerFn(getSheetTabsFn)
+  const rotateApiKey = useServerFn(rotateApiKeyFn)
 
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState('')
@@ -37,6 +38,7 @@ export function RouteComponent() {
   const [selectedSheetId, setSelectedSheetId] = useState('')
   const [selectedSheetName, setSelectedSheetName] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
+  const [rotatingId, setRotatingId] = useState<string | null>(null)
 
   const { sheets, userSheets, baseUrl } = Route.useLoaderData()
   const session = Route.useRouteContext()
@@ -73,6 +75,17 @@ export function RouteComponent() {
     if (!window.confirm('Delete this sheet connection? This cannot be undone.')) return
     await deleteSheet({ data: { id } })
     router.invalidate()
+  }
+
+  async function handleRotate(id: string) {
+    if (!window.confirm('Regenerate API key? The current key will stop working immediately.')) return
+    setRotatingId(id)
+    try {
+      await rotateApiKey({ data: { id } })
+      router.invalidate()
+    } finally {
+      setRotatingId(null)
+    }
   }
 
   async function handleCopy(text: string, key: string) {
@@ -238,6 +251,14 @@ export function RouteComponent() {
                         className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors shrink-0"
                       >
                         {copied === `${sheet.id}-apikey` ? '✓ Copied' : 'Copy'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRotate(sheet.id)}
+                        disabled={rotatingId === sheet.id}
+                        className="text-xs font-medium text-white/30 hover:text-white/60 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {rotatingId === sheet.id ? 'Rotating...' : 'Rotate'}
                       </button>
                     </div>
                   </div>

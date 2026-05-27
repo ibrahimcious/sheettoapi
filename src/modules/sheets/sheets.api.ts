@@ -59,9 +59,24 @@ export const deleteSheetFn = createServerFn({ method: "POST" })
     })
   })
 
-export const getUserSheetsFn = createServerFn({ method: "GET" })
+export const rotateApiKeyFn = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .handler(async ({ context }) => {
+  .inputValidator(DeleteSheetSchema)
+  .handler(async ({ context, data }) => {
+    const { db } = context
+    const headers = getRequestHeaders()
+
+    const session = await auth.api.getSession({ headers })
+    if (!session) throw new Error("Unauthorized")
+
+    return db.sheetConnection.update({
+      where: { id: data.id, userId: session.user.id },
+      data: { apiKey: crypto.randomUUID() },
+    })
+  })
+
+export const getUserSheetsFn = createServerFn({ method: "GET" })
+  .handler(async () => {
     const headers = getRequestHeaders()
 
     const session = await auth.api.getSession({ headers })
@@ -83,9 +98,8 @@ export const getUserSheetsFn = createServerFn({ method: "GET" })
   })
 
 export const getSheetTabsFn = createServerFn({ method: "GET" })
-  .middleware([dbMiddleware])
   .inputValidator(z.object({ sheetId: z.string() }))
-  .handler(async ({ context, data }) => {
+  .handler(async ({ data }) => {
     const headers = getRequestHeaders()
 
     const session = await auth.api.getSession({ headers })

@@ -9,6 +9,7 @@ const {
   mockDeleteSheet,
   mockConnectSheet,
   mockGetSheetTabs,
+  mockRotateApiKey,
 } = vi.hoisted(() => ({
   mockInvalidate: vi.fn(),
   mockUseLoaderData: vi.fn(),
@@ -16,6 +17,7 @@ const {
   mockDeleteSheet: vi.fn(),
   mockConnectSheet: vi.fn(),
   mockGetSheetTabs: vi.fn(),
+  mockRotateApiKey: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-router', () => ({
@@ -44,6 +46,7 @@ vi.mock('#/modules/sheets/sheets.api', () => ({
   deleteSheetFn: mockDeleteSheet,
   getUserSheetsFn: vi.fn(),
   getSheetTabsFn: mockGetSheetTabs,
+  rotateApiKeyFn: mockRotateApiKey,
 }))
 
 import { RouteComponent } from './dashboard'
@@ -91,6 +94,7 @@ describe('RouteComponent (dashboard)', () => {
     mockDeleteSheet.mockResolvedValue(undefined)
     mockConnectSheet.mockResolvedValue(undefined)
     mockGetSheetTabs.mockResolvedValue(['Sheet1', 'Sheet2', 'Data'])
+    mockRotateApiKey.mockResolvedValue(undefined)
     mockInvalidate.mockReset()
   })
 
@@ -270,6 +274,30 @@ describe('RouteComponent (dashboard)', () => {
       setup()
       await act(async () => { fireEvent.click(screen.getByText('Inventory')) })
       await act(async () => { fireEvent.click(screen.getByText('Connect sheet')) })
+      expect(mockInvalidate).toHaveBeenCalled()
+    })
+  })
+
+  describe('rotate API key', () => {
+    it('shows a confirmation dialog before rotating', () => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      setup()
+      fireEvent.click(screen.getByText('Rotate'))
+      expect(confirm).toHaveBeenCalledWith('Regenerate API key? The current key will stop working immediately.')
+    })
+
+    it('does not call rotateApiKeyFn when user cancels', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false)
+      setup()
+      fireEvent.click(screen.getByText('Rotate'))
+      expect(mockRotateApiKey).not.toHaveBeenCalled()
+    })
+
+    it('calls rotateApiKeyFn and refreshes router when confirmed', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      setup()
+      await act(async () => { fireEvent.click(screen.getByText('Rotate')) })
+      expect(mockRotateApiKey).toHaveBeenCalledWith({ data: { id: 'sheet-1' } })
       expect(mockInvalidate).toHaveBeenCalled()
     })
   })
