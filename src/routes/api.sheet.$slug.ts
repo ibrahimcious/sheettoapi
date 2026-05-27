@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken, getFirstSheetTab, resolveSheet } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -26,6 +26,11 @@ function rowsToJson(rows: string[][]): Record<string, string>[] {
 export const Route = createFileRoute("/api/sheet/$slug")({
   server: {
     handlers: {
+      OPTIONS: async () => new Response(null, {
+        status: 204,
+        headers: { ...corsHeaders, "Access-Control-Max-Age": "86400" },
+      }),
+
       GET: async ({ request, params }) => {
         const { slug } = params
         const url = new URL(request.url)
@@ -54,21 +59,10 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
 
-        if (!response.ok) {
-          return new Response(
-            JSON.stringify({ error: "Failed to fetch sheet data" }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (!response.ok) return json({ error: "Failed to fetch sheet data" }, 502)
 
         const data = await response.json()
-
-        if (data.error) {
-          return new Response(
-            JSON.stringify({ error: "Failed to fetch sheet data", detail: data.error.message }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (data.error) return json({ error: "Failed to fetch sheet data", detail: data.error.message }, 502)
 
         const allRows = rowsToJson(data.values ?? [])
 
@@ -85,13 +79,10 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const start = (page - 1) * limit
         const paginatedRows = filteredRows.slice(start, start + limit)
 
-        return new Response(
-          JSON.stringify({
-            data: paginatedRows,
-            pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        )
+        return json({
+          data: paginatedRows,
+          pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
+        })
       },
 
       POST: async ({ request, params }) => {
@@ -108,13 +99,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
-
-        if (!metaRes.ok) {
-          return new Response(
-            JSON.stringify({ error: "Failed to read sheet headers" }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (!metaRes.ok) return json({ error: "Failed to read sheet headers" }, 502)
 
         const meta = await metaRes.json()
         const headers: string[] = meta.values?.[0] ?? []
@@ -129,16 +114,9 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           }
         )
         const appendData = await appendRes.json()
-        if (appendData.error) {
-          return new Response(
-            JSON.stringify({ error: "Failed to append row", detail: appendData.error.message }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
-        return new Response(
-          JSON.stringify({ success: true, data: body }),
-          { status: 201, headers: { "Content-Type": "application/json" } }
-        )
+        if (appendData.error) return json({ error: "Failed to append row", detail: appendData.error.message }, 502)
+
+        return json({ success: true, data: body }, 201)
       },
     },
   },

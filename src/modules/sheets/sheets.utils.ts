@@ -1,5 +1,18 @@
 import { prisma } from '#/shared/lib/prisma'
 
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "X-API-Key, Content-Type",
+}
+
+export function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  })
+}
+
 export async function getValidAccessToken(userId: string): Promise<string> {
   const account = await prisma.account.findFirst({
     where: { userId, providerId: 'google' }
@@ -52,17 +65,7 @@ export async function getFirstSheetTab(sheetId: string): Promise<string> {
 
 export async function resolveSheet(slug: string, apiKey: string | null) {
   const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
-  if (!sheet) {
-    return { ok: false as const, response: new Response(
-      JSON.stringify({ error: "Endpoint not found" }),
-      { status: 404, headers: { "Content-Type": "application/json" } }
-    )}
-  }
-  if (!apiKey || apiKey !== sheet.apiKey) {
-    return { ok: false as const, response: new Response(
-      JSON.stringify({ error: "Invalid API key" }),
-      { status: 401, headers: { "Content-Type": "application/json" } }
-    )}
-  }
+  if (!sheet) return { ok: false as const, response: json({ error: "Endpoint not found" }, 404) }
+  if (!apiKey || apiKey !== sheet.apiKey) return { ok: false as const, response: json({ error: "Invalid API key" }, 401) }
   return { ok: true as const, sheet }
 }

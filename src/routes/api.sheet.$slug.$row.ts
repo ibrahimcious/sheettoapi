@@ -1,21 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getValidAccessToken, getFirstSheetTab, resolveSheet } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
 export const Route = createFileRoute("/api/sheet/$slug/$row")({
   server: {
     handlers: {
+      OPTIONS: async () => new Response(null, {
+        status: 204,
+        headers: { ...corsHeaders, "Access-Control-Max-Age": "86400" },
+      }),
+
       PUT: async ({ request, params }) => {
         const { slug, row } = params
         const rowNumber = parseInt(row)
 
-        if (isNaN(rowNumber) || rowNumber < 1) {
-          return new Response(
-            JSON.stringify({ error: "Invalid row number" }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (isNaN(rowNumber) || rowNumber < 1) return json({ error: "Invalid row number" }, 400)
 
         const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
         if (!result.ok) return result.response
@@ -28,13 +28,7 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
-
-        if (!metaRes.ok) {
-          return new Response(
-            JSON.stringify({ error: "Failed to read sheet headers" }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (!metaRes.ok) return json({ error: "Failed to read sheet headers" }, 502)
 
         const meta = await metaRes.json()
         const headers: string[] = meta.values?.[0] ?? []
@@ -52,32 +46,17 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
             body: JSON.stringify({ values: [rowValues] }),
           }
         )
-
         const updateData = await updateRes.json()
+        if (updateData.error) return json({ error: "Failed to update row", detail: updateData.error.message }, 502)
 
-        if (updateData.error) {
-          return new Response(
-            JSON.stringify({ error: "Failed to update row", detail: updateData.error.message }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, row: rowNumber, data: body }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        )
+        return json({ success: true, row: rowNumber, data: body })
       },
 
       DELETE: async ({ request, params }) => {
         const { slug, row } = params
         const rowNumber = parseInt(row)
 
-        if (isNaN(rowNumber) || rowNumber < 1) {
-          return new Response(
-            JSON.stringify({ error: "Invalid row number" }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (isNaN(rowNumber) || rowNumber < 1) return json({ error: "Invalid row number" }, 400)
 
         const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
         if (!result.ok) return result.response
@@ -88,34 +67,17 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}?key=${GOOGLE_API_KEY}`
         )
-
-        if (!metaRes.ok) {
-          return new Response(
-            JSON.stringify({ error: "Failed to fetch sheet metadata" }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (!metaRes.ok) return json({ error: "Failed to fetch sheet metadata" }, 502)
 
         const meta = await metaRes.json()
-
-        if (meta.error) {
-          return new Response(
-            JSON.stringify({ error: "Failed to fetch sheet metadata" }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (meta.error) return json({ error: "Failed to fetch sheet metadata" }, 502)
 
         const tabName = sheet.tabName || meta.sheets[0].properties.title
         const sheetTab = meta.sheets.find(
           (s: { properties: { title: string; sheetId: number } }) => s.properties.title === tabName
         )
 
-        if (!sheetTab) {
-          return new Response(
-            JSON.stringify({ error: "Sheet tab not found" }),
-            { status: 404, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        if (!sheetTab) return json({ error: "Sheet tab not found" }, 404)
 
         const sheetId = sheetTab.properties.sheetId
 
@@ -133,20 +95,10 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
             }),
           }
         )
-
         const deleteData = await deleteRes.json()
+        if (deleteData.error) return json({ error: "Failed to delete row", detail: deleteData.error.message }, 502)
 
-        if (deleteData.error) {
-          return new Response(
-            JSON.stringify({ error: "Failed to delete row", detail: deleteData.error.message }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, row: rowNumber }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        )
+        return json({ success: true, row: rowNumber })
       },
     },
   },
