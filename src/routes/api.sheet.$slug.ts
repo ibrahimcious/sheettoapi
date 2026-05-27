@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken, getFirstSheetTab } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -37,26 +37,12 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const reservedParams = ['page', 'limit', 'tab']
         const filters: Record<string, string> = {}
         url.searchParams.forEach((value, key) => {
-          if (!reservedParams.includes(key)) {
-            filters[key] = value
-          }
+          if (!reservedParams.includes(key)) filters[key] = value
         })
 
-        const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
-        if (!sheet) {
-          return new Response(
-            JSON.stringify({ error: "Endpoint not found" }),
-            { status: 404, headers: { "Content-Type": "application/json" } }
-          )
-        }
-
-        const apiKey = request.headers.get("X-API-Key")
-        if (!apiKey || apiKey !== sheet.apiKey) {
-          return new Response(
-            JSON.stringify({ error: "Invalid API key" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
+        if (!result.ok) return result.response
+        const { sheet } = result
 
         await prisma.sheetConnection.update({
           where: { slug },
@@ -67,6 +53,14 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const response = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
+
+        if (!response.ok) {
+          return new Response(
+            JSON.stringify({ error: "Failed to fetch sheet data" }),
+            { status: 502, headers: { "Content-Type": "application/json" } }
+          )
+        }
+
         const data = await response.json()
 
         if (data.error) {
@@ -94,14 +88,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         return new Response(
           JSON.stringify({
             data: paginatedRows,
-            pagination: {
-              page,
-              limit,
-              total,
-              totalPages,
-              hasNext: page < totalPages,
-              hasPrev: page > 1,
-            }
+            pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         )
@@ -109,37 +96,35 @@ export const Route = createFileRoute("/api/sheet/$slug")({
 
       POST: async ({ request, params }) => {
         const { slug } = params
-        const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
-        if (!sheet) {
-          return new Response(
-            JSON.stringify({ error: "Endpoint not found" }),
-            { status: 404, headers: { "Content-Type": "application/json" } }
-          )
-        }
-        const apiKey = request.headers.get("X-API-Key")
-        if (!apiKey || apiKey !== sheet.apiKey) {
-          return new Response(
-            JSON.stringify({ error: "Invalid API key" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-          )
-        }
+
+        const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
+        if (!result.ok) return result.response
+        const { sheet } = result
+
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
         const tab = sheet.tabName || await getFirstSheetTab(sheet.sheetId)
+
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
+
+        if (!metaRes.ok) {
+          return new Response(
+            JSON.stringify({ error: "Failed to read sheet headers" }),
+            { status: 502, headers: { "Content-Type": "application/json" } }
+          )
+        }
+
         const meta = await metaRes.json()
         const headers: string[] = meta.values?.[0] ?? []
         const rowValues = headers.map((h: string) => body[h] ?? '')
+
         const appendRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}:append?valueInputOption=USER_ENTERED`,
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ values: [rowValues] }),
           }
         )

@@ -14,15 +14,24 @@ function RouteComponent() {
     email: '',
     password: '',
   })
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handleRegisterUser() {
-    await register({
-      data: {
-        name: registerData.name,
-        email: registerData.email,
-        password: registerData.password,
-      },
-    })
+    setError('')
+    setIsLoading(true)
+    try {
+      await register({
+        data: {
+          name: registerData.name,
+          email: registerData.email,
+          password: registerData.password,
+        },
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Registration failed. Please try again.')
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -71,10 +80,15 @@ function RouteComponent() {
           <button
             type="button"
             onClick={handleRegisterUser}
-            className="w-full text-[14px] font-medium leading-none px-[15px] py-[10px] rounded-full bg-white text-black hover:opacity-90 transition-opacity"
+            disabled={isLoading}
+            className="w-full text-[14px] font-medium leading-none px-[15px] py-[10px] rounded-full bg-white text-black hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create account
+            {isLoading ? 'Creating account...' : 'Create account'}
           </button>
+
+          {error && (
+            <p className="text-[#ff5577] text-sm text-center mt-2">{error}</p>
+          )}
 
           <p className="text-ink-muted text-[13px] text-center mt-6 tracking-[-0.13px]">
             Already have an account?{' '}

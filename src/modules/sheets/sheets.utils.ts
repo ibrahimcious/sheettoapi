@@ -45,6 +45,24 @@ export async function getFirstSheetTab(sheetId: string): Promise<string> {
   const res = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${process.env.GOOGLE_API_KEY}`
   )
+  if (!res.ok) return 'Sheet1'
   const meta = await res.json()
   return meta.sheets?.[0]?.properties?.title ?? 'Sheet1'
+}
+
+export async function resolveSheet(slug: string, apiKey: string | null) {
+  const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
+  if (!sheet) {
+    return { ok: false as const, response: new Response(
+      JSON.stringify({ error: "Endpoint not found" }),
+      { status: 404, headers: { "Content-Type": "application/json" } }
+    )}
+  }
+  if (!apiKey || apiKey !== sheet.apiKey) {
+    return { ok: false as const, response: new Response(
+      JSON.stringify({ error: "Invalid API key" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    )}
+  }
+  return { ok: true as const, sheet }
 }

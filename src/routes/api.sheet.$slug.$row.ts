@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken, getFirstSheetTab } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -18,38 +17,30 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           )
         }
 
-        const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
-        if (!sheet) {
-          return new Response(
-            JSON.stringify({ error: "Endpoint not found" }),
-            { status: 404, headers: { "Content-Type": "application/json" } }
-          )
-        }
-
-        const apiKey = request.headers.get("X-API-Key")
-        if (!apiKey || apiKey !== sheet.apiKey) {
-          return new Response(
-            JSON.stringify({ error: "Invalid API key" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
+        if (!result.ok) return result.response
+        const { sheet } = result
 
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
-
-        // Get headers from sheet
         const tab = sheet.tabName || await getFirstSheetTab(sheet.sheetId)
+
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
+
+        if (!metaRes.ok) {
+          return new Response(
+            JSON.stringify({ error: "Failed to read sheet headers" }),
+            { status: 502, headers: { "Content-Type": "application/json" } }
+          )
+        }
+
         const meta = await metaRes.json()
         const headers: string[] = meta.values?.[0] ?? []
-
-        // Map body to row values based on headers
         const rowValues = headers.map((h: string) => body[h] ?? '')
 
         // Row 1 in user terms = row 2 in sheet (row 1 is header)
-        // So user row 1 = sheet row 2
         const sheetRow = rowNumber + 1
         const range = `${tab}!A${sheetRow}`
 
@@ -57,10 +48,7 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${range}?valueInputOption=USER_ENTERED`,
           {
             method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ values: [rowValues] }),
           }
         )
@@ -79,6 +67,7 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           { status: 200, headers: { "Content-Type": "application/json" } }
         )
       },
+
       DELETE: async ({ request, params }) => {
         const { slug, row } = params
         const rowNumber = parseInt(row)
@@ -90,28 +79,23 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           )
         }
 
-        const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
-        if (!sheet) {
-          return new Response(
-            JSON.stringify({ error: "Endpoint not found" }),
-            { status: 404, headers: { "Content-Type": "application/json" } }
-          )
-        }
-
-        const apiKey = request.headers.get("X-API-Key")
-        if (!apiKey || apiKey !== sheet.apiKey) {
-          return new Response(
-            JSON.stringify({ error: "Invalid API key" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-          )
-        }
+        const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
+        if (!result.ok) return result.response
+        const { sheet } = result
 
         const accessToken = await getValidAccessToken(sheet.userId)
 
-        // Get sheet metadata to find the sheet tab index
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}?key=${GOOGLE_API_KEY}`
         )
+
+        if (!metaRes.ok) {
+          return new Response(
+            JSON.stringify({ error: "Failed to fetch sheet metadata" }),
+            { status: 502, headers: { "Content-Type": "application/json" } }
+          )
+        }
+
         const meta = await metaRes.json()
 
         if (meta.error) {
@@ -121,10 +105,9 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           )
         }
 
-        // Find the sheet tab index by tab name
         const tabName = sheet.tabName || meta.sheets[0].properties.title
         const sheetTab = meta.sheets.find(
-          (s: any) => s.properties.title === tabName
+          (s: { properties: { title: string; sheetId: number } }) => s.properties.title === tabName
         )
 
         if (!sheetTab) {
@@ -136,30 +119,17 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
 
         const sheetId = sheetTab.properties.sheetId
 
-        // Row 1 in user terms = row 2 in sheet (row 1 is header)
-        // Google Sheets API uses 0-based index for deleteDimension
-        const startIndex = rowNumber // +1 for header, -1 for 0-based = stays the same
+        // +1 for header offset, -1 for 0-based index = rowNumber unchanged
+        const startIndex = rowNumber
         const endIndex = startIndex + 1
 
         const deleteRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}:batchUpdate`,
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              requests: [{
-                deleteDimension: {
-                  range: {
-                    sheetId,
-                    dimension: 'ROWS',
-                    startIndex,
-                    endIndex,
-                  }
-                }
-              }]
+              requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex, endIndex } } }]
             }),
           }
         )
