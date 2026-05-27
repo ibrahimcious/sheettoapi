@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders, logRequest } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -21,6 +21,11 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         if (!result.ok) return result.response
         const { sheet } = result
 
+        const respond = (body: unknown, status = 200) => {
+          void logRequest(sheet.id, 'PUT', status).catch(() => {})
+          return json(body, status)
+        }
+
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
         const tab = sheet.tabName || await getFirstSheetTab(sheet.sheetId)
@@ -28,7 +33,7 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
-        if (!metaRes.ok) return json({ error: "Failed to read sheet headers" }, 502)
+        if (!metaRes.ok) return respond({ error: "Failed to read sheet headers" }, 502)
 
         const meta = await metaRes.json()
         const headers: string[] = meta.values?.[0] ?? []
@@ -47,9 +52,9 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           }
         )
         const updateData = await updateRes.json()
-        if (updateData.error) return json({ error: "Failed to update row", detail: updateData.error.message }, 502)
+        if (updateData.error) return respond({ error: "Failed to update row", detail: updateData.error.message }, 502)
 
-        return json({ success: true, row: rowNumber, data: body })
+        return respond({ success: true, row: rowNumber, data: body })
       },
 
       DELETE: async ({ request, params }) => {
@@ -62,22 +67,27 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         if (!result.ok) return result.response
         const { sheet } = result
 
+        const respond = (body: unknown, status = 200) => {
+          void logRequest(sheet.id, 'DELETE', status).catch(() => {})
+          return json(body, status)
+        }
+
         const accessToken = await getValidAccessToken(sheet.userId)
 
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}?key=${GOOGLE_API_KEY}`
         )
-        if (!metaRes.ok) return json({ error: "Failed to fetch sheet metadata" }, 502)
+        if (!metaRes.ok) return respond({ error: "Failed to fetch sheet metadata" }, 502)
 
         const meta = await metaRes.json()
-        if (meta.error) return json({ error: "Failed to fetch sheet metadata" }, 502)
+        if (meta.error) return respond({ error: "Failed to fetch sheet metadata" }, 502)
 
         const tabName = sheet.tabName || meta.sheets[0].properties.title
         const sheetTab = meta.sheets.find(
           (s: { properties: { title: string; sheetId: number } }) => s.properties.title === tabName
         )
 
-        if (!sheetTab) return json({ error: "Sheet tab not found" }, 404)
+        if (!sheetTab) return respond({ error: "Sheet tab not found" }, 404)
 
         const sheetId = sheetTab.properties.sheetId
 
@@ -96,9 +106,9 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           }
         )
         const deleteData = await deleteRes.json()
-        if (deleteData.error) return json({ error: "Failed to delete row", detail: deleteData.error.message }, 502)
+        if (deleteData.error) return respond({ error: "Failed to delete row", detail: deleteData.error.message }, 502)
 
-        return json({ success: true, row: rowNumber })
+        return respond({ success: true, row: rowNumber })
       },
     },
   },

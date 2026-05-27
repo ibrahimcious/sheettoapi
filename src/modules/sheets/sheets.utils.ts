@@ -63,6 +63,19 @@ export async function getFirstSheetTab(sheetId: string): Promise<string> {
   return meta.sheets?.[0]?.properties?.title ?? 'Sheet1'
 }
 
+export async function logRequest(sheetConnectionId: string, method: string, status: number): Promise<void> {
+  await prisma.requestLog.create({ data: { sheetConnectionId, method, status } })
+  const toDelete = await prisma.requestLog.findMany({
+    where: { sheetConnectionId },
+    orderBy: { createdAt: 'desc' },
+    skip: 100,
+    select: { id: true },
+  })
+  if (toDelete.length > 0) {
+    await prisma.requestLog.deleteMany({ where: { id: { in: toDelete.map(l => l.id) } } })
+  }
+}
+
 export async function resolveSheet(slug: string, apiKey: string | null) {
   const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
   if (!sheet) return { ok: false as const, response: json({ error: "Endpoint not found" }, 404) }

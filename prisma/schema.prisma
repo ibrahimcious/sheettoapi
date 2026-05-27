@@ -23,9 +23,22 @@ model SheetConnection {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs RequestLog[]
 
   @@unique([userId, sheetId, tabName])
+}
+
+model RequestLog {
+  id                String          @id @default(cuid())
+  sheetConnectionId String
+  method            String
+  status            Int
+  createdAt         DateTime        @default(now())
+
+  sheetConnection SheetConnection @relation(fields: [sheetConnectionId], references: [id], onDelete: Cascade)
+
+  @@index([sheetConnectionId, createdAt])
 }
 
 model User {

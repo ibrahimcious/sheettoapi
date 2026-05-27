@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders, logRequest } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -51,6 +51,11 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         if (!result.ok) return result.response
         const { sheet } = result
 
+        const respond = (body: unknown, status = 200) => {
+          void logRequest(sheet.id, 'GET', status).catch(() => {})
+          return json(body, status)
+        }
+
         await prisma.sheetConnection.update({
           where: { slug },
           data: { lastUsedAt: new Date() },
@@ -61,10 +66,10 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
 
-        if (!response.ok) return json({ error: "Failed to fetch sheet data" }, 502)
+        if (!response.ok) return respond({ error: "Failed to fetch sheet data" }, 502)
 
         const data = await response.json()
-        if (data.error) return json({ error: "Failed to fetch sheet data", detail: data.error.message }, 502)
+        if (data.error) return respond({ error: "Failed to fetch sheet data", detail: data.error.message }, 502)
 
         const allRows = rowsToJson(data.values ?? [])
 
@@ -88,7 +93,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const start = (page - 1) * limit
         const paginatedRows = sortedRows.slice(start, start + limit)
 
-        return json({
+        return respond({
           data: paginatedRows,
           pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
         })
@@ -101,6 +106,11 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         if (!result.ok) return result.response
         const { sheet } = result
 
+        const respond = (body: unknown, status = 200) => {
+          void logRequest(sheet.id, 'POST', status).catch(() => {})
+          return json(body, status)
+        }
+
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
         const tab = sheet.tabName || await getFirstSheetTab(sheet.sheetId)
@@ -108,7 +118,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
-        if (!metaRes.ok) return json({ error: "Failed to read sheet headers" }, 502)
+        if (!metaRes.ok) return respond({ error: "Failed to read sheet headers" }, 502)
 
         const meta = await metaRes.json()
         const headers: string[] = meta.values?.[0] ?? []
@@ -123,9 +133,9 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           }
         )
         const appendData = await appendRes.json()
-        if (appendData.error) return json({ error: "Failed to append row", detail: appendData.error.message }, 502)
+        if (appendData.error) return respond({ error: "Failed to append row", detail: appendData.error.message }, 502)
 
-        return json({ success: true, data: body }, 201)
+        return respond({ success: true, data: body }, 201)
       },
     },
   },

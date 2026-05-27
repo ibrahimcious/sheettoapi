@@ -65,6 +65,8 @@ const makeSheet = (overrides = {}) => ({
   userId: 'u1',
   sheetId: 'gid-budget',
   createdAt: new Date(),
+  logs: [] as { id: string; method: string; status: number; createdAt: Date }[],
+  _count: { logs: 0 },
   ...overrides,
 })
 
@@ -132,15 +134,15 @@ describe('RouteComponent (dashboard)', () => {
       expect(screen.getByText(/key-abc-123/)).toBeDefined()
     })
 
-    it('shows "Never" when lastUsedAt is null', () => {
+    it('shows 0 total requests when no logs', () => {
       setup()
-      expect(screen.getByText(/Last used:.*Never/)).toBeDefined()
+      expect(screen.getByText(/0 total requests/)).toBeDefined()
     })
 
-    it('shows a formatted date when lastUsedAt is set', () => {
+    it('shows last used date when lastUsedAt is set', () => {
       const sheet = makeSheet({ lastUsedAt: new Date('2026-05-20T10:30:00Z') })
       setup({ ...defaultLoaderData, sheets: [sheet] })
-      expect(screen.queryByText(/Last used:.*Never/)).toBeNull()
+      expect(screen.getByText(/Last used/)).toBeDefined()
     })
 
     it('shows empty state when no sheets connected', () => {

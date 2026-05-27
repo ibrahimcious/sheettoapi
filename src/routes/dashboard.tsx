@@ -25,6 +25,16 @@ export const Route = createFileRoute('/dashboard')({
   }
 })
 
+function timeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
+}
+
 export function RouteComponent() {
   const logout = useServerFn(logoutFn)
   const connectSheet = useServerFn(connectSheetFn)
@@ -273,18 +283,30 @@ export function RouteComponent() {
                     </div>
                   </div>
 
-                  <p className="text-white/30 text-xs mt-4">
-                    Last used:{' '}
-                    {sheet.lastUsedAt
-                      ? new Date(sheet.lastUsedAt).toLocaleDateString('en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : 'Never'}
-                  </p>
+                  <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                    <p className="text-white/30 text-xs mb-2">
+                      {sheet._count.logs} total request{sheet._count.logs !== 1 ? 's' : ''}
+                      {sheet.lastUsedAt && (
+                        <> · Last used {new Date(sheet.lastUsedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</>
+                      )}
+                    </p>
+                    {sheet.logs.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        {sheet.logs.map((log) => (
+                          <div key={log.id} className="flex items-center gap-2 text-xs">
+                            <span className={`font-mono font-semibold w-12 shrink-0 ${
+                              log.method === 'GET' ? 'text-blue-400' :
+                              log.method === 'POST' ? 'text-green-400' :
+                              log.method === 'PUT' ? 'text-yellow-400' :
+                              'text-red-400'
+                            }`}>{log.method}</span>
+                            <span className={`font-mono ${log.status < 300 ? 'text-white/40' : 'text-[#ff5577]/70'}`}>{log.status}</span>
+                            <span className="text-white/20">{timeAgo(new Date(log.createdAt))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -41,6 +41,13 @@ export const getMySheetsFn = createServerFn({ method: "GET" })
 
     return db.sheetConnection.findMany({
       where: { userId: session.user.id },
+      include: {
+        logs: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+        _count: { select: { logs: true } },
+      },
     })
   })
 
