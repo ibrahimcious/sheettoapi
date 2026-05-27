@@ -1,44 +1,46 @@
+import { HeroAnimation } from '#/components/HeroAnimation'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({ component: Home })
 
+const features = [
+  {
+    title: 'No backend needed',
+    description: 'Connect your sheet and get a live endpoint instantly — no server, no code, no config.',
+  },
+  {
+    title: 'Always live',
+    description: 'Data updates the moment you edit your sheet. No re-deploys, no webhooks to wire up.',
+  },
+  {
+    title: 'Any language',
+    description: 'Standard REST endpoint. Fetch it from JavaScript, Python, curl, or anything with HTTP.',
+  },
+]
+
 function Home() {
   return (
-    <div className="min-h-screen bg-canvas flex flex-col">
-      <nav className="flex items-center justify-between px-8 h-14 border-b border-hairline shrink-0">
-        <span className="text-ink text-[14px] font-medium tracking-[-0.14px]">SheetToAPI</span>
-        <Link
-          to="/login"
-          className="text-[14px] font-medium text-ink-muted hover:text-ink transition-colors"
-        >
+    <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
+      <nav className="flex items-center justify-between px-8 h-14 border-b border-white/7 shrink-0">
+        <span className="text-white text-sm font-medium">SheetToAPI</span>
+        <Link to="/login" className="text-sm font-medium text-white/50 hover:text-white transition-colors">
           Sign in
         </Link>
       </nav>
-
-      <main className="flex-1 flex flex-col items-center justify-center px-8 py-24 text-center">
-        <p className="text-ink-muted text-[13px] font-medium tracking-[-0.13px] mb-6">
-          Google Sheets → REST API
-        </p>
-        <h1
-          className="text-ink font-semibold mb-6 tracking-[-0.05em]"
-          style={{ fontSize: 'clamp(40px, 7vw, 85px)', lineHeight: 0.95 }}
-        >
-          Turn sheets into<br />live API endpoints
-        </h1>
-        <p
-          className="text-ink-muted max-w-md mb-10 tracking-[-0.01em]"
-          style={{ fontSize: '18px', lineHeight: '1.30' }}
-        >
-          Connect your Google Sheets and get a REST API endpoint in seconds. No backend required.
-        </p>
-        <Link
-          to="/login"
-          className="text-[14px] font-medium leading-none px-[15px] py-[10px] rounded-full bg-white text-black hover:opacity-90 transition-opacity"
-        >
-          Get started for free
-        </Link>
-
+      <main className="flex-1 flex flex-col items-center justify-center px-8 py-24">
+        <HeroAnimation />
       </main>
+      <section className="border-t border-white/7 px-8 py-16">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-10">
+          {features.map(f => (
+            <div key={f.title} className="flex flex-col gap-3">
+              <div className="w-8 h-0.5 bg-green-400" />
+              <h3 className="text-white font-semibold text-sm">{f.title}</h3>
+              <p className="text-white/40 text-sm leading-relaxed">{f.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

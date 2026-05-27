@@ -3,6 +3,7 @@ import { useServerFn } from '@tanstack/react-start'
 import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn } from '#/modules/sheets/sheets.api'
 import { useEffect, useState } from 'react'
 import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
+import { Navbar } from '#/components/Navbar'
 
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
@@ -23,7 +24,7 @@ export const Route = createFileRoute('/dashboard')({
   }
 })
 
-export function RouteComponent() {
+function RouteComponent() {
   const logout = useServerFn(logoutFn)
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)
@@ -87,46 +88,41 @@ export function RouteComponent() {
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
-      {/* Nav */}
-      <header className="flex items-center justify-between px-8 h-14 border-b border-hairline shrink-0">
-        <Link to="/" className="text-ink text-[14px] font-medium tracking-[-0.14px]">
-          SheetToAPI
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/docs"
-            className="text-ink-muted text-[14px] font-medium tracking-[-0.14px] hover:text-ink transition-colors"
-          >
-            Docs
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="size-7 bg-surface-2 text-ink rounded-full flex items-center justify-center text-[12px] font-medium border border-hairline shrink-0">
-              {session?.user.name.charAt(0).toUpperCase()}
+      <Navbar
+        right={
+          <>
+            <Link
+              to="/docs"
+              className="text-sm font-medium text-white/50 hover:text-white transition-colors"
+            >
+              Docs
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="size-7 bg-white/10 text-white rounded-full flex items-center justify-center text-xs font-medium border border-white/10 shrink-0">
+                {session?.user.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-white/50 text-sm">
+                {session?.user.name}
+              </span>
             </div>
-            <span className="text-ink-muted text-[13px] tracking-[-0.13px]">
-              {session?.user.name}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="text-[14px] font-medium leading-none px-[15px] py-[10px] rounded-full bg-surface-1 text-ink-muted hover:text-ink hover:bg-surface-2 transition-colors"
-          >
-            Log out
-          </button>
-        </div>
-      </header>
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="text-sm font-medium text-white/50 hover:text-white transition-colors"
+            >
+              Log out
+            </button>
+          </>
+        }
+      />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-8 py-12">
         {/* Connect a Sheet */}
         <section className="mb-12">
-          <h2
-            className="text-ink font-semibold mb-2 tracking-[-0.05em]"
-            style={{ fontSize: '32px', lineHeight: '1.13' }}
-          >
+          <h2 className="text-white font-bold text-3xl tracking-tight mb-2">
             Connect a Sheet
           </h2>
-          <p className="text-ink-muted text-[15px] tracking-[-0.15px] mb-6" style={{ lineHeight: '1.30' }}>
+          <p className="text-white/40 text-sm mb-6">
             Select a Google Sheet to create an API endpoint.
           </p>
 
@@ -137,34 +133,34 @@ export function RouteComponent() {
                 key={sheet.id}
                 type="button"
                 onClick={() => handleSelectSheet(sheet.id, sheet.name)}
-                className={`text-left border rounded-[10px] px-4 py-3 text-[15px] tracking-[-0.15px] transition-all ${
+                className={`text-left border rounded-lg px-4 py-3 text-sm transition-all ${
                   selectedSheetId === sheet.id
-                    ? 'border-[#0099ff]/40 bg-[#0099ff]/5 text-ink shadow-[0_0_0_1px_rgba(0,153,255,0.15)]'
-                    : 'border-hairline bg-surface-1 text-ink hover:bg-surface-2'
+                    ? 'border-green-500/40 bg-green-500/5 text-white shadow-[0_0_0_1px_rgba(74,222,128,0.15)]'
+                    : 'border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 {sheet.name}
               </button>
             ))}
             {userSheets.length === 0 && (
-              <p className="text-ink-muted text-[14px] tracking-[-0.14px]">No Google Sheets found.</p>
+              <p className="text-white/40 text-sm">No Google Sheets found.</p>
             )}
           </div>
 
           {/* Tab selector */}
           {tabs.length > 0 && (
             <div className="mb-6">
-              <p className="text-ink-muted text-[13px] font-medium tracking-[-0.13px] mb-3">Select tab:</p>
+              <p className="text-white/40 text-xs font-medium mb-3">Select tab:</p>
               <div className="flex gap-2 flex-wrap">
                 {tabs.map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setSelectedTab(tab)}
-                    className={`text-[14px] font-medium leading-none px-[14px] py-[8px] rounded-full transition-colors ${
+                    className={`text-sm font-medium leading-none px-3.5 py-2 rounded-lg transition-colors ${
                       selectedTab === tab
-                        ? 'bg-surface-2 text-ink'
-                        : 'bg-canvas border border-hairline text-ink-muted hover:bg-surface-1 hover:text-ink'
+                        ? 'bg-white/10 text-white'
+                        : 'border border-white/10 text-white/40 hover:bg-white/5 hover:text-white/70'
                     }`}
                   >
                     {tab}
@@ -178,85 +174,79 @@ export function RouteComponent() {
             type="button"
             onClick={handleConnect}
             disabled={!selectedSheetId || isConnecting}
-            className="text-[14px] font-medium leading-none px-[15px] py-[10px] rounded-full bg-white text-black hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            className="font-mono text-sm font-semibold px-5 py-2.5 rounded-lg bg-green-400 text-black hover:bg-green-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isConnecting ? 'Connecting...' : 'Connect sheet'}
           </button>
 
           {error && (
-            <p className="text-[#ff5577] text-[13px] tracking-[-0.13px] mt-3">{error}</p>
+            <p className="text-[#ff5577] text-sm mt-3">{error}</p>
           )}
         </section>
 
         {/* My Sheets */}
         <section>
-          <h2
-            className="text-ink font-semibold mb-6 tracking-[-0.05em]"
-            style={{ fontSize: '32px', lineHeight: '1.13' }}
-          >
+          <h2 className="text-white font-bold text-3xl tracking-tight mb-6">
             My Sheets
           </h2>
 
           {sheets.length === 0 ? (
-            <p className="text-ink-muted text-[15px] tracking-[-0.15px]">No sheets connected yet.</p>
+            <p className="text-white/40 text-sm">No sheets connected yet.</p>
           ) : (
             <div className="flex flex-col gap-4">
               {sheets.map((sheet) => (
                 <div
                   key={sheet.id}
-                  className="bg-surface-1 border border-hairline rounded-[20px] p-6"
+                  className="bg-white/5 border border-white/10 rounded-xl p-6"
                 >
                   <div className="flex items-start justify-between mb-1">
-                    <h3
-                      className="text-ink font-semibold tracking-[-0.05em]"
-                      style={{ fontSize: '22px', lineHeight: '1.20' }}
-                    >
+                    <h3 className="text-white font-semibold text-xl tracking-tight">
                       {sheet.sheetName}
                     </h3>
                     <button
                       type="button"
                       onClick={() => handleDelete(sheet.id)}
-                      className="text-[13px] text-ink-muted hover:text-[#ff5577] transition-colors tracking-[-0.13px] shrink-0 ml-4"
+                      className="text-sm text-white/30 hover:text-[#ff5577] transition-colors shrink-0 ml-4"
                     >
                       Delete
                     </button>
                   </div>
 
-                  <p className="text-ink-muted text-[13px] tracking-[-0.13px] mb-4">
+                  <p className="text-white/40 text-xs mb-4">
                     Tab: {sheet.tabName || 'First tab'}
                   </p>
 
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-ink-muted text-[13px] tracking-[-0.13px] shrink-0 w-16">Endpoint</span>
-                      <code className="text-ink text-[13px] bg-surface-2 border border-hairline-soft rounded-[6px] px-2 py-1 flex-1 min-w-0 truncate">
+                      <span className="text-white/40 text-xs shrink-0 w-16">Endpoint</span>
+                      <code className="font-mono text-xs text-white/70 bg-white/[0.07] border border-white/10 rounded-lg px-2 py-1 flex-1 min-w-0 truncate">
                         {baseUrl}/api/sheet/{sheet.slug}
                       </code>
                       <button
                         type="button"
                         onClick={() => handleCopy(`${baseUrl}/api/sheet/${sheet.slug}`, `${sheet.id}-endpoint`)}
-                        className="text-[13px] font-medium text-accent hover:opacity-70 transition-opacity shrink-0"
+                        className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors shrink-0"
                       >
                         {copied === `${sheet.id}-endpoint` ? '✓ Copied' : 'Copy'}
                       </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-ink-muted text-[13px] tracking-[-0.13px] shrink-0 w-16">API Key</span>
-                      <code className="text-ink text-[13px] bg-surface-2 border border-hairline-soft rounded-[6px] px-2 py-1 flex-1 min-w-0 truncate">
+                      <span className="text-white/40 text-xs shrink-0 w-16">API Key</span>
+                      <code className="font-mono text-xs text-white/70 bg-white/[0.07] border border-white/10 rounded-lg px-2 py-1 flex-1 min-w-0 truncate">
                         {sheet.apiKey}
                       </code>
                       <button
                         type="button"
                         onClick={() => handleCopy(sheet.apiKey, `${sheet.id}-apikey`)}
-                        className="text-[13px] font-medium text-accent hover:opacity-70 transition-opacity shrink-0"
+                        className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors shrink-0"
                       >
                         {copied === `${sheet.id}-apikey` ? '✓ Copied' : 'Copy'}
                       </button>
                     </div>
                   </div>
 
-                  <p className="text-ink-muted text-[12px] tracking-[-0.12px] mt-4">
+                  <p className="text-white/30 text-xs mt-4">
                     Last used:{' '}
                     {sheet.lastUsedAt
                       ? new Date(sheet.lastUsedAt).toLocaleDateString('en-US', {

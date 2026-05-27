@@ -1,10 +1,8 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #090909;
+  --color-canvas: #0a0a0f;
   --color-surface-1: #141414;
   --color-surface-2: #1c1c1c;
   --color-hairline: #262626;
@@ -13,6 +11,28 @@
   --color-ink-muted: #999999;
   --color-accent: #0099ff;
   --color-success: #22c55e;
+}
+
+/* HeroAnimation */
+@keyframes travelRight {
+  0% { left: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: calc(100% - 8px); opacity: 0; }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.arrow-ping { animation: travelRight 1.8s ease infinite; }
+.live-dot { animation: pulse-dot 2s ease infinite; }
+.active-row td {
+  background: rgba(0, 232, 135, 0.06) !important;
+  color: #00e887 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrow-ping { animation: none; opacity: 1; left: 50%; }
+  .live-dot { animation: none; }
 }
 
 * {
@@ -27,7 +47,7 @@ body,
 
 body {
   margin: 0;
-  background-color: #090909;
+  background-color: #0a0a0f;
   color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-feature-settings: 'cv01' 1, 'cv05' 1, 'cv09' 1, 'cv11' 1, 'ss03' 1, 'ss07' 1;
