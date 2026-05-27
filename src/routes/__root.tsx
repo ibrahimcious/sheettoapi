@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
+import { PostHogPageView } from '#/components/PostHogPageView'
 
 import appCss from '../styles.css?url'
 
@@ -50,6 +51,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <PostHogPageView />
         {DevTools && (
           <Suspense fallback={null}>
             <DevTools />
