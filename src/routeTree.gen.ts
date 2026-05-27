@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -18,11 +17,6 @@ import { Route as ApiSheetSlugRouteImport } from './routes/api.sheet.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 import { Route as ApiSheetSlugRowRouteImport } from './routes/api.sheet.$slug.$row'
 
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -64,7 +58,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/sheet/$slug': typeof ApiSheetSlugRouteWithChildren
   '/api/sheet/$slug/$row': typeof ApiSheetSlugRowRoute
@@ -74,7 +67,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/sheet/$slug': typeof ApiSheetSlugRouteWithChildren
   '/api/sheet/$slug/$row': typeof ApiSheetSlugRowRoute
@@ -85,7 +77,6 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/sheet/$slug': typeof ApiSheetSlugRouteWithChildren
   '/api/sheet/$slug/$row': typeof ApiSheetSlugRowRoute
@@ -97,7 +88,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/docs'
     | '/login'
-    | '/register'
     | '/api/auth/$'
     | '/api/sheet/$slug'
     | '/api/sheet/$slug/$row'
@@ -107,7 +97,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/docs'
     | '/login'
-    | '/register'
     | '/api/auth/$'
     | '/api/sheet/$slug'
     | '/api/sheet/$slug/$row'
@@ -117,7 +106,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/docs'
     | '/login'
-    | '/register'
     | '/api/auth/$'
     | '/api/sheet/$slug'
     | '/api/sheet/$slug/$row'
@@ -128,20 +116,12 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DocsRoute: typeof DocsRoute
   LoginRoute: typeof LoginRoute
-  RegisterRoute: typeof RegisterRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiSheetSlugRoute: typeof ApiSheetSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -211,7 +191,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DocsRoute: DocsRoute,
   LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiSheetSlugRoute: ApiSheetSlugRouteWithChildren,
 }

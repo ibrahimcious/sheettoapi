@@ -1,7 +1,8 @@
 import { createFileRoute, redirect, useRouter, Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn, rotateApiKeyFn } from '#/modules/sheets/sheets.api'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import posthog from 'posthog-js'
 import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
 import { Navbar } from '#/components/Navbar'
 
@@ -43,6 +44,15 @@ export function RouteComponent() {
   const { sheets, userSheets, baseUrl } = Route.useLoaderData()
   const session = Route.useRouteContext()
   const router = useRouter()
+
+  useEffect(() => {
+    if (session?.user) {
+      posthog.identify(session.user.id, {
+        email: session.user.email,
+        name: session.user.name,
+      })
+    }
+  }, [session?.user?.id])
 
   async function handleSelectSheet(id: string, name: string) {
     setSelectedSheetId(id)
