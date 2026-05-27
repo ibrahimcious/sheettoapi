@@ -16,6 +16,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSheetSlugRouteImport } from './routes/api.sheet.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
+import { Route as ApiSheetSlugRowRouteImport } from './routes/api.sheet.$slug.$row'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -52,6 +53,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSheetSlugRowRoute = ApiSheetSlugRowRouteImport.update({
+  id: '/$row',
+  path: '/$row',
+  getParentRoute: () => ApiSheetSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,7 +66,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/sheet/$slug': typeof ApiSheetSlugRoute
+  '/api/sheet/$slug': typeof ApiSheetSlugRouteWithChildren
+  '/api/sheet/$slug/$row': typeof ApiSheetSlugRowRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +76,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/sheet/$slug': typeof ApiSheetSlugRoute
+  '/api/sheet/$slug': typeof ApiSheetSlugRouteWithChildren
+  '/api/sheet/$slug/$row': typeof ApiSheetSlugRowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +87,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/sheet/$slug': typeof ApiSheetSlugRoute
+  '/api/sheet/$slug': typeof ApiSheetSlugRouteWithChildren
+  '/api/sheet/$slug/$row': typeof ApiSheetSlugRowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/api/auth/$'
     | '/api/sheet/$slug'
+    | '/api/sheet/$slug/$row'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/api/auth/$'
     | '/api/sheet/$slug'
+    | '/api/sheet/$slug/$row'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/api/auth/$'
     | '/api/sheet/$slug'
+    | '/api/sheet/$slug/$row'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,7 +130,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiSheetSlugRoute: typeof ApiSheetSlugRoute
+  ApiSheetSlugRoute: typeof ApiSheetSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -172,8 +184,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sheet/$slug/$row': {
+      id: '/api/sheet/$slug/$row'
+      path: '/$row'
+      fullPath: '/api/sheet/$slug/$row'
+      preLoaderRoute: typeof ApiSheetSlugRowRouteImport
+      parentRoute: typeof ApiSheetSlugRoute
+    }
   }
 }
+
+interface ApiSheetSlugRouteChildren {
+  ApiSheetSlugRowRoute: typeof ApiSheetSlugRowRoute
+}
+
+const ApiSheetSlugRouteChildren: ApiSheetSlugRouteChildren = {
+  ApiSheetSlugRowRoute: ApiSheetSlugRowRoute,
+}
+
+const ApiSheetSlugRouteWithChildren = ApiSheetSlugRoute._addFileChildren(
+  ApiSheetSlugRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -182,7 +213,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiSheetSlugRoute: ApiSheetSlugRoute,
+  ApiSheetSlugRoute: ApiSheetSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

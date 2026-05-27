@@ -28,11 +28,11 @@ function rowsToJson(rows: string[][]): Record<string, string>[] {
   return rows
     .slice(headerRowIndex + 1)
     .filter((row: string[]) => row.some((cell: string) => cell !== ""))
-    .map((row: string[]) =>
-      headers.reduce((obj: Record<string, string>, header: string, i: number) => {
-        obj[header] = row[i] ?? ""
+    .map((row: string[], i: number) =>
+      headers.reduce((obj: Record<string, string>, header: string, idx: number) => {
+        obj[header] = row[idx] ?? ""
         return obj
-      }, {})
+      }, { _row: String(i + 1) } as Record<string, string>)
     )
 }
 
