@@ -1,128 +1,250 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Navbar } from '#/components/Navbar'
 
-const BASE_URL = 'https://sheettoapi.net'
+const BASE_URL = import.meta.env.VITE_APP_URL ?? 'https://sheettoapi.net'
 
 export const Route = createFileRoute('/docs')({
-  component: RouteComponent,
+  component: DocsPage,
 })
 
-function RouteComponent() {
+function DocsPage() {
   return (
-    <div className="min-h-screen bg-canvas flex flex-col">
-      <Navbar
-        right={
-          <Link
-            to="/dashboard"
-            className="text-sm font-medium text-white/50 hover:text-white transition-colors"
-          >
-            Dashboard →
-          </Link>
-        }
-      />
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-8 py-12">
-        <h1 className="text-white font-bold text-5xl tracking-tight mb-2">
-          API Docs
-        </h1>
-        <p className="text-white/40 text-sm mb-12">
-          Learn how to use SheetToAPI endpoints.
+      {/* Header */}
+      <nav className="flex items-center justify-between px-8 h-14 border-b border-white/7">
+        <Link to="/" className="text-white text-[14px] font-medium">SheetToAPI</Link>
+        <Link to="/dashboard" className="text-[14px] font-medium text-white/50 hover:text-white transition-colors">
+          Dashboard
+        </Link>
+      </nav>
+
+      <div className="max-w-3xl mx-auto px-8 py-12">
+        <h1 className="text-3xl font-bold mb-2">API Documentation</h1>
+        <p className="text-white/50 text-sm font-mono mb-10">
+          Full CRUD access to your Google Sheets via REST API
         </p>
 
         {/* Base URL */}
-        <section className="mb-10">
-          <h2 className="text-white font-semibold text-xl tracking-tight mb-3">
-            Base URL
-          </h2>
-          <code className="block bg-white/5 border border-white/10 font-mono text-white/70 text-xs px-4 py-3 rounded-lg">
-            {BASE_URL}/api/sheet
-          </code>
-        </section>
+        <Section title="Base URL">
+          <Code>{BASE_URL}/api/sheet</Code>
+        </Section>
 
         {/* Authentication */}
-        <section className="mb-10">
-          <h2 className="text-white font-semibold text-xl tracking-tight mb-3">
-            Authentication
-          </h2>
-          <p className="text-white/40 text-sm mb-3">
-            Include your API key in every request header.
+        <Section title="Authentication">
+          <p className="text-white/60 text-sm mb-3">
+            Every request must include your API key in the request header.
+            Find your API key on the dashboard after connecting a sheet.
           </p>
-          <code className="block bg-white/5 border border-white/10 font-mono text-white/70 text-xs px-4 py-3 rounded-lg">
-            X-API-Key: your-api-key
-          </code>
-        </section>
+          <Code>X-API-Key: your-api-key</Code>
+        </Section>
 
-        {/* Get all rows */}
-        <section className="mb-10">
-          <h2 className="text-white font-semibold text-xl tracking-tight mb-3">
-            Get all rows
-          </h2>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-green-500/10 text-green-400 font-mono text-xs font-medium px-2 py-1 rounded-md">GET</span>
-            <code className="font-mono text-white/70 text-sm">/api/sheet/{'{slug}'}</code>
+        {/* GET */}
+        <Section title="Get all rows">
+          <EndpointBadge method="GET" path="/api/sheet/{slug}" />
+          <p className="text-white/60 text-sm my-3">
+            Returns rows from the connected sheet as a JSON array.
+            Supports pagination and filtering.
+          </p>
+
+          <ParamTable
+            title="Query parameters"
+            params={[
+              { name: 'page', type: 'number', default: '1', desc: 'Page number' },
+              { name: 'limit', type: 'number', default: '10', desc: 'Rows per page' },
+              { name: 'tab', type: 'string', default: 'first tab', desc: 'Sheet tab name' },
+              { name: '[column]', type: 'string', default: '—', desc: 'Filter by any column value' },
+            ]}
+          />
+
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example request:</p>
+          <Code>{`curl ${BASE_URL}/api/sheet/my-slug?page=1&limit=5&Status=Published \\
+  -H "X-API-Key: your-api-key"`}</Code>
+
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example response:</p>
+          <Code>{`{
+  "data": [
+    { "_row": "1", "Name": "Ali", "Platform": "Instagram", "Status": "Published" },
+    { "_row": "2", "Name": "Budi", "Platform": "TikTok", "Status": "Published" }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 2,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrev": false
+  }
+}`}</Code>
+
+          <div className="mt-3 p-3 bg-blue-500/5 border border-blue-500/15 rounded-lg">
+            <p className="text-blue-400 text-xs font-mono">
+              💡 The <span className="text-white">_row</span> field indicates the row number — use it for PUT and DELETE requests.
+            </p>
           </div>
-          <p className="text-white/40 text-sm mb-4">
-            Returns all rows from the connected sheet as a JSON array.
+        </Section>
+
+        {/* POST */}
+        <Section title="Add a row">
+          <EndpointBadge method="POST" path="/api/sheet/{slug}" />
+          <p className="text-white/60 text-sm my-3">
+            Appends a new row to the sheet. Request body keys must match the sheet column headers.
           </p>
 
-          <p className="text-white/60 text-xs font-medium mb-2">Example request:</p>
-          <pre className="bg-white/5 border border-white/10 font-mono text-white/70 text-xs px-4 py-3 rounded-lg mb-4 overflow-x-auto">
-            {`curl ${BASE_URL}/api/sheet/my-slug \\
-  -H "X-API-Key: your-api-key"`}
-          </pre>
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example request:</p>
+          <Code>{`curl -X POST ${BASE_URL}/api/sheet/my-slug \\
+  -H "X-API-Key: your-api-key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"Name": "Eko", "Platform": "YouTube", "Status": "Ideation"}'`}</Code>
 
-          <p className="text-white/60 text-xs font-medium mb-2">Example response:</p>
-          <pre className="bg-white/5 border border-white/10 font-mono text-white/70 text-xs px-4 py-3 rounded-lg overflow-x-auto">
-            {`[
-  { "id": "1", "name": "Tom", "age": "15" },
-  { "id": "2", "name": "Alex", "age": "24" }
-]`}
-          </pre>
-        </section>
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example response:</p>
+          <Code>{`{
+  "success": true,
+  "data": {
+    "Name": "Eko",
+    "Platform": "YouTube",
+    "Status": "Ideation"
+  }
+}`}</Code>
+        </Section>
 
-        {/* Tab parameter */}
-        <section className="mb-10">
-          <h2 className="text-white font-semibold text-xl tracking-tight mb-3">
-            Select a specific tab
-          </h2>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-green-500/10 text-green-400 font-mono text-xs font-medium px-2 py-1 rounded-md">GET</span>
-            <code className="font-mono text-white/70 text-sm">/api/sheet/{'{slug}'}?tab=SheetName</code>
-          </div>
-          <p className="text-white/40 text-sm mb-4">
-            Use the{' '}
-            <code className="bg-white/5 border border-white/10 font-mono text-white/70 px-1.5 py-0.5 rounded text-xs">tab</code>
-            {' '}query parameter to fetch data from a specific sheet tab.
+        {/* PUT */}
+        <Section title="Update a row">
+          <EndpointBadge method="PUT" path="/api/sheet/{slug}/{row}" />
+          <p className="text-white/60 text-sm my-3">
+            Updates a specific row by row number. Use the <span className="text-white font-mono">_row</span> value
+            from the GET response to identify which row to update.
           </p>
-          <pre className="bg-white/5 border border-white/10 font-mono text-white/70 text-xs px-4 py-3 rounded-lg overflow-x-auto">
-            {`curl "${BASE_URL}/api/sheet/my-slug?tab=Sheet2" \\
-  -H "X-API-Key: your-api-key"`}
-          </pre>
-        </section>
+
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example request:</p>
+          <Code>{`curl -X PUT ${BASE_URL}/api/sheet/my-slug/2 \\
+  -H "X-API-Key: your-api-key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"Name": "Budi Updated", "Platform": "TikTok", "Status": "Done"}'`}</Code>
+
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example response:</p>
+          <Code>{`{
+  "success": true,
+  "row": 2,
+  "data": {
+    "Name": "Budi Updated",
+    "Platform": "TikTok",
+    "Status": "Done"
+  }
+}`}</Code>
+        </Section>
+
+        {/* DELETE */}
+        <Section title="Delete a row">
+          <EndpointBadge method="DELETE" path="/api/sheet/{slug}/{row}" />
+          <p className="text-white/60 text-sm my-3">
+            Permanently deletes a row from the sheet. Rows below the deleted row shift up automatically.
+          </p>
+
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example request:</p>
+          <Code>{`curl -X DELETE ${BASE_URL}/api/sheet/my-slug/2 \\
+  -H "X-API-Key: your-api-key"`}</Code>
+
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example response:</p>
+          <Code>{`{
+  "success": true,
+  "row": 2
+}`}</Code>
+        </Section>
 
         {/* Error responses */}
-        <section className="mb-12">
-          <h2 className="text-white font-semibold text-xl tracking-tight mb-4">
-            Error responses
-          </h2>
-          <div className="flex flex-col gap-3">
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-[#ff5577]/10 text-[#ff5577] font-mono text-xs font-medium px-2 py-1 rounded-md">401</span>
-                <code className="font-mono text-white/70 text-sm">Invalid API key</code>
-              </div>
-              <p className="text-white/40 text-sm">API key is missing or incorrect.</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-[#ff5577]/10 text-[#ff5577] font-mono text-xs font-medium px-2 py-1 rounded-md">404</span>
-                <code className="font-mono text-white/70 text-sm">Endpoint not found</code>
-              </div>
-              <p className="text-white/40 text-sm">The slug does not exist.</p>
-            </div>
+        <Section title="Error responses">
+          <div className="flex flex-col gap-2">
+            <ErrorRow status="400" message="Invalid row number" desc="Row param is not a valid number" />
+            <ErrorRow status="401" message="Invalid API key" desc="API key is missing or incorrect" />
+            <ErrorRow status="404" message="Endpoint not found" desc="The slug does not exist" />
+            <ErrorRow status="502" message="Failed to fetch sheet data" desc="Google Sheets API returned an error" />
           </div>
-        </section>
-      </main>
+        </Section>
+
+      </div>
+    </div>
+  )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-10">
+      <h2 className="text-lg font-semibold mb-4 pb-3 border-b border-white/7">{title}</h2>
+      {children}
+    </div>
+  )
+}
+
+function EndpointBadge({ method, path }: { method: string; path: string }) {
+  const colors: Record<string, string> = {
+    GET: 'bg-green-500/10 text-green-400 border-green-500/20',
+    POST: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    PUT: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    DELETE: 'bg-red-500/10 text-red-400 border-red-500/20',
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`font-mono text-xs font-bold px-2 py-1 rounded border ${colors[method]}`}>
+        {method}
+      </span>
+      <code className="font-mono text-sm text-white/70">{path}</code>
+    </div>
+  )
+}
+
+function Code({ children }: { children: React.ReactNode }) {
+  return (
+    <pre className="bg-white/[0.03] border border-white/7 rounded-lg p-4 font-mono text-xs text-white/70 overflow-x-auto leading-relaxed">
+      {children}
+    </pre>
+  )
+}
+
+function ParamTable({ title, params }: {
+  title: string
+  params: { name: string; type: string; default: string; desc: string }[]
+}) {
+  return (
+    <div className="mt-3">
+      <p className="text-white/40 text-xs font-mono mb-2">{title}:</p>
+      <div className="border border-white/7 rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/7 bg-white/[0.02]">
+              <th className="font-mono text-[0.65rem] text-white/30 px-3 py-2 text-left">Param</th>
+              <th className="font-mono text-[0.65rem] text-white/30 px-3 py-2 text-left">Type</th>
+              <th className="font-mono text-[0.65rem] text-white/30 px-3 py-2 text-left">Default</th>
+              <th className="font-mono text-[0.65rem] text-white/30 px-3 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {params.map((p, i) => (
+              <tr key={i} className="border-b border-white/7 last:border-0">
+                <td className="font-mono text-xs text-green-400 px-3 py-2">{p.name}</td>
+                <td className="font-mono text-xs text-blue-400 px-3 py-2">{p.type}</td>
+                <td className="font-mono text-xs text-white/30 px-3 py-2">{p.default}</td>
+                <td className="font-mono text-xs text-white/60 px-3 py-2">{p.desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function ErrorRow({ status, message, desc }: { status: string; message: string; desc: string }) {
+  const color = parseInt(status) >= 500 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+    : 'bg-red-500/10 text-red-400 border-red-500/20'
+  return (
+    <div className="flex items-start gap-3 p-3 border border-white/7 rounded-lg">
+      <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded border flex-shrink-0 ${color}`}>
+        {status}
+      </span>
+      <div>
+        <p className="font-mono text-xs text-white/80">{message}</p>
+        <p className="font-mono text-xs text-white/40 mt-0.5">{desc}</p>
+      </div>
     </div>
   )
 }
