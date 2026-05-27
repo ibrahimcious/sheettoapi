@@ -48,6 +48,15 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const page = parseInt(url.searchParams.get("page") ?? "1")
         const limit = parseInt(url.searchParams.get("limit") ?? "10")
 
+        // Extract filter params — anything that isn't a reserved param
+        const reservedParams = ['page', 'limit', 'tab']
+        const filters: Record<string, string> = {}
+        url.searchParams.forEach((value, key) => {
+          if (!reservedParams.includes(key)) {
+            filters[key] = value
+          }
+        })
+
         const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
         if (!sheet) {
           return new Response(
@@ -84,11 +93,20 @@ export const Route = createFileRoute("/api/sheet/$slug")({
 
         const allRows = rowsToJson(data.values ?? [])
 
-        // Paginate results
-        const total = allRows.length
+        // Apply filters — case insensitive match
+        const filteredRows = Object.keys(filters).length > 0
+          ? allRows.filter(row =>
+            Object.entries(filters).every(([key, value]) =>
+              row[key]?.toLowerCase() === value.toLowerCase()
+            )
+          )
+          : allRows
+
+        // Paginate filtered results
+        const total = filteredRows.length
         const totalPages = Math.ceil(total / limit)
         const start = (page - 1) * limit
-        const paginatedRows = allRows.slice(start, start + limit)
+        const paginatedRows = filteredRows.slice(start, start + limit)
 
         return new Response(
           JSON.stringify({
