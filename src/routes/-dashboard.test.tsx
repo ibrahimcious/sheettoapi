@@ -274,13 +274,4 @@ describe('RouteComponent (dashboard)', () => {
     })
   })
 
-  describe('auto-refresh', () => {
-    it('invalidates the router every 30 seconds', () => {
-      setup()
-      act(() => { vi.advanceTimersByTime(30000) })
-      expect(mockInvalidate).toHaveBeenCalledTimes(1)
-      act(() => { vi.advanceTimersByTime(30000) })
-      expect(mockInvalidate).toHaveBeenCalledTimes(2)
-    })
-  })
 })

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect, useRouter, Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn } from '#/modules/sheets/sheets.api'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
 import { Navbar } from '#/components/Navbar'
 
@@ -81,10 +81,6 @@ export function RouteComponent() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  useEffect(() => {
-    const interval = setInterval(() => router.invalidate(), 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
