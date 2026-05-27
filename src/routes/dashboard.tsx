@@ -24,7 +24,7 @@ export const Route = createFileRoute('/dashboard')({
   }
 })
 
-function RouteComponent() {
+export function RouteComponent() {
   const logout = useServerFn(logoutFn)
   const connectSheet = useServerFn(connectSheetFn)
   const deleteSheet = useServerFn(deleteSheetFn)

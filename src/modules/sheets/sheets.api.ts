@@ -3,7 +3,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 import { dbMiddleware } from "#/shared/middleware/db.middleware"
 import { ConnectSheetSchema, DeleteSheetSchema } from "./sheets.schema"
 import { auth } from "#/modules/auth/auth.utils"
-import type { PrismaClient } from "#/generated/prisma/client"
+import { getValidAccessToken } from "./sheets.utils"
 import z from "zod"
 
 export const connectSheetFn = createServerFn({ method: "POST" })
@@ -62,18 +62,19 @@ export const deleteSheetFn = createServerFn({ method: "POST" })
 export const getUserSheetsFn = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .handler(async ({ context }) => {
-    const { db } = context
     const headers = getRequestHeaders()
 
     const session = await auth.api.getSession({ headers })
     if (!session) throw new Error("Unauthorized")
 
-    const accessToken = await getValidGoogleAccessToken(db, session.user.id)
+    const accessToken = await getValidAccessToken(session.user.id)
 
     const response = await fetch(
       "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet'&pageSize=10&orderBy=modifiedTime desc&fields=files(id,name)",
       { headers: { Authorization: `Bearer ${accessToken}` } }
     )
+
+    if (!response.ok) throw new Error(`Google Drive request failed: ${response.status}`)
 
     const data = await response.json()
     if (data.error) throw new Error(data.error.message)
@@ -85,63 +86,24 @@ export const getSheetTabsFn = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .inputValidator(z.object({ sheetId: z.string() }))
   .handler(async ({ context, data }) => {
-    const { db } = context
     const headers = getRequestHeaders()
 
     const session = await auth.api.getSession({ headers })
     if (!session) throw new Error("Unauthorized")
 
-    const accessToken = await getValidGoogleAccessToken(db, session.user.id)
+    const accessToken = await getValidAccessToken(session.user.id)
 
     const metaResponse = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${data.sheetId}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     )
+
+    if (!metaResponse.ok) throw new Error(`Google Sheets request failed: ${metaResponse.status}`)
+
     const meta = await metaResponse.json()
     if (!meta.sheets) return []
     return meta.sheets.map((s: { properties: { title: string } }) => s.properties.title) as string[]
   })
-
-// Refreshes the Google access token if expired, returns a valid token
-async function getValidGoogleAccessToken(db: PrismaClient, userId: string): Promise<string> {
-  const account = await db.account.findFirst({
-    where: { userId, providerId: "google" },
-  })
-
-  if (!account?.accessToken) throw new Error("No Google account connected")
-
-  const isExpired = account.accessTokenExpiresAt
-    ? account.accessTokenExpiresAt.getTime() < Date.now() + 60_000
-    : false
-
-  if (!isExpired) return account.accessToken
-
-  if (!account.refreshToken) throw new Error("Session expired — please sign in again")
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: account.refreshToken,
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  })
-
-  const tokens = await response.json()
-  if (tokens.error) throw new Error(`Token refresh failed: ${tokens.error_description}`)
-
-  await db.account.update({
-    where: { id: account.id },
-    data: {
-      accessToken: tokens.access_token,
-      accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-    },
-  })
-
-  return tokens.access_token as string
-}
 
 function extractSheetId(url: string): string {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)

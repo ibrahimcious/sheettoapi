@@ -1,43 +1,50 @@
 import { prisma } from '#/shared/lib/prisma'
 
-// Get a valid Google OAuth access token for a user
-// Automatically refreshes the token if it has expired
 export async function getValidAccessToken(userId: string): Promise<string> {
   const account = await prisma.account.findFirst({
     where: { userId, providerId: 'google' }
   })
 
-  if (!account?.accessToken) throw new Error('No access token found')
+  if (!account?.accessToken) throw new Error('No Google account connected')
 
   const isExpired = account.accessTokenExpiresAt
     ? new Date() > new Date(account.accessTokenExpiresAt)
     : false
 
-  if (isExpired && account.refreshToken) {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        refresh_token: account.refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    })
+  if (!isExpired) return account.accessToken
 
-    const data = await res.json()
+  if (!account.refreshToken) throw new Error('Session expired — please sign in again')
 
-    if (data.access_token) {
-      await prisma.account.update({
-        where: { id: account.id },
-        data: {
-          accessToken: data.access_token,
-          accessTokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
-        },
-      })
-      return data.access_token
-    }
-  }
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      refresh_token: account.refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  })
 
-  return account.accessToken
+  const data = await res.json()
+
+  if (!data.access_token) throw new Error(`Token refresh failed: ${data.error_description ?? 'unknown error'}`)
+
+  await prisma.account.update({
+    where: { id: account.id },
+    data: {
+      accessToken: data.access_token,
+      accessTokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
+    },
+  })
+
+  return data.access_token as string
+}
+
+export async function getFirstSheetTab(sheetId: string): Promise<string> {
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${process.env.GOOGLE_API_KEY}`
+  )
+  const meta = await res.json()
+  return meta.sheets?.[0]?.properties?.title ?? 'Sheet1'
 }

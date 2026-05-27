@@ -1,21 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
-
-async function getSheetTab(sheetId: string, tab?: string): Promise<string> {
-  if (tab) return tab
-  const metaResponse = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${GOOGLE_API_KEY}`
-  )
-  const meta = await metaResponse.json()
-  if (!meta.sheets) {
-    console.log("meta error:", meta)
-    return "Sheet1"
-  }
-  return meta.sheets[0].properties.title
-}
 
 function rowsToJson(rows: string[][]): Record<string, string>[] {
   if (!rows || rows.length === 0) return []
@@ -44,11 +31,9 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const url = new URL(request.url)
         const tabParam = url.searchParams.get("tab") ?? undefined
 
-        // Pagination params — default page 1, limit 10
-        const page = parseInt(url.searchParams.get("page") ?? "1")
-        const limit = parseInt(url.searchParams.get("limit") ?? "10")
+        const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1)
+        const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "10") || 10))
 
-        // Extract filter params — anything that isn't a reserved param
         const reservedParams = ['page', 'limit', 'tab']
         const filters: Record<string, string> = {}
         url.searchParams.forEach((value, key) => {
@@ -78,7 +63,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           data: { lastUsedAt: new Date() },
         })
 
-        const tab = tabParam ?? (sheet.tabName || null) ?? await getSheetTab(sheet.sheetId, undefined)
+        const tab = tabParam ?? (sheet.tabName || await getFirstSheetTab(sheet.sheetId))
         const response = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )
@@ -93,7 +78,6 @@ export const Route = createFileRoute("/api/sheet/$slug")({
 
         const allRows = rowsToJson(data.values ?? [])
 
-        // Apply filters — case insensitive match
         const filteredRows = Object.keys(filters).length > 0
           ? allRows.filter(row =>
             Object.entries(filters).every(([key, value]) =>
@@ -102,7 +86,6 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           )
           : allRows
 
-        // Paginate filtered results
         const total = filteredRows.length
         const totalPages = Math.ceil(total / limit)
         const start = (page - 1) * limit
@@ -142,7 +125,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         }
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
-        const tab = sheet.tabName || await getSheetTab(sheet.sheetId, undefined)
+        const tab = sheet.tabName || await getFirstSheetTab(sheet.sheetId)
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )

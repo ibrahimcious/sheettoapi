@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         const accessToken = await getValidAccessToken(sheet.userId)
 
         // Get headers from sheet
-        const tab = sheet.tabName || "Sheet1"
+        const tab = sheet.tabName || await getFirstSheetTab(sheet.sheetId)
         const metaRes = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${sheet.sheetId}/values/${tab}?key=${GOOGLE_API_KEY}`
         )

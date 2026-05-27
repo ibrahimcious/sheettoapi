@@ -26,6 +26,7 @@ vi.mock('@tanstack/react-router', () => ({
   }),
   redirect: vi.fn(),
   useRouter: () => ({ invalidate: mockInvalidate }),
+  Link: ({ children }: any) => children,
 }))
 
 vi.mock('@tanstack/react-start', () => ({
@@ -145,11 +146,11 @@ describe('RouteComponent (dashboard)', () => {
   })
 
   describe('copy button', () => {
-    it('shows "Copied!" after clicking the endpoint copy button', async () => {
+    it('shows "✓ Copied" after clicking the endpoint copy button', async () => {
       setup()
       const [endpointCopy] = screen.getAllByText('Copy')
       await act(async () => { fireEvent.click(endpointCopy) })
-      expect(screen.getByText('Copied!')).toBeDefined()
+      expect(screen.getByText('✓ Copied')).toBeDefined()
     })
 
     it('reverts to "Copy" after 2 seconds', async () => {
@@ -157,7 +158,7 @@ describe('RouteComponent (dashboard)', () => {
       const [endpointCopy] = screen.getAllByText('Copy')
       await act(async () => { fireEvent.click(endpointCopy) })
       act(() => { vi.advanceTimersByTime(2000) })
-      expect(screen.queryByText('Copied!')).toBeNull()
+      expect(screen.queryByText('✓ Copied')).toBeNull()
     })
 
     it('writes the endpoint URL to clipboard', async () => {
@@ -204,7 +205,7 @@ describe('RouteComponent (dashboard)', () => {
   describe('connect sheet flow', () => {
     it('connect button is disabled when no sheet is selected', () => {
       setup()
-      const btn = screen.getByText('Connect Selected Sheet') as HTMLButtonElement
+      const btn = screen.getByText('Connect sheet') as HTMLButtonElement
       expect(btn.disabled).toBe(true)
     })
 
@@ -224,7 +225,7 @@ describe('RouteComponent (dashboard)', () => {
     it('enables connect button after selecting a drive sheet', async () => {
       setup()
       await act(async () => { fireEvent.click(screen.getByText('Inventory')) })
-      const btn = screen.getByText('Connect Selected Sheet') as HTMLButtonElement
+      const btn = screen.getByText('Connect sheet') as HTMLButtonElement
       expect(btn.disabled).toBe(false)
     })
 
@@ -232,7 +233,7 @@ describe('RouteComponent (dashboard)', () => {
       setup()
       await act(async () => { fireEvent.click(screen.getByText('Inventory')) })
       fireEvent.click(screen.getByText('Sheet2'))
-      await act(async () => { fireEvent.click(screen.getByText('Connect Selected Sheet')) })
+      await act(async () => { fireEvent.click(screen.getByText('Connect sheet')) })
 
       expect(mockConnectSheet).toHaveBeenCalledWith({
         data: {
@@ -246,7 +247,7 @@ describe('RouteComponent (dashboard)', () => {
     it('calls connectSheetFn without tabName when no tab is selected', async () => {
       setup()
       await act(async () => { fireEvent.click(screen.getByText('Inventory')) })
-      await act(async () => { fireEvent.click(screen.getByText('Connect Selected Sheet')) })
+      await act(async () => { fireEvent.click(screen.getByText('Connect sheet')) })
 
       expect(mockConnectSheet).toHaveBeenCalledWith({
         data: {
@@ -261,14 +262,14 @@ describe('RouteComponent (dashboard)', () => {
       mockConnectSheet.mockRejectedValueOnce(new Error('Network error'))
       setup()
       await act(async () => { fireEvent.click(screen.getByText('Inventory')) })
-      await act(async () => { fireEvent.click(screen.getByText('Connect Selected Sheet')) })
+      await act(async () => { fireEvent.click(screen.getByText('Connect sheet')) })
       expect(screen.getByText('Failed to connect sheet. Please try again.')).toBeDefined()
     })
 
     it('invalidates router after successful connect', async () => {
       setup()
       await act(async () => { fireEvent.click(screen.getByText('Inventory')) })
-      await act(async () => { fireEvent.click(screen.getByText('Connect Selected Sheet')) })
+      await act(async () => { fireEvent.click(screen.getByText('Connect sheet')) })
       expect(mockInvalidate).toHaveBeenCalled()
     })
   })
