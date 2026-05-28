@@ -21,12 +21,18 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         if (!result.ok) return result.response
         const { sheet } = result
 
-        const respond = (body: unknown, status = 200) => {
+        const rateLimit = checkRateLimit(sheet.apiKey)
+        const rlHeaders = {
+          'X-RateLimit-Limit': String(rateLimit.limit),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+          'X-RateLimit-Reset': String(rateLimit.reset),
+        }
+        const respond = (body: unknown, status = 200, extra: Record<string, string> = {}) => {
           void logRequest(sheet.id, 'PUT', status).catch(() => {})
-          return json(body, status)
+          return json(body, status, { ...rlHeaders, ...extra })
         }
 
-        if (!checkRateLimit(sheet.apiKey)) return respond({ error: "Rate limit exceeded" }, 429)
+        if (!rateLimit.allowed) return respond({ error: "Rate limit exceeded" }, 429, { 'Retry-After': '60' })
 
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
@@ -69,12 +75,18 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
         if (!result.ok) return result.response
         const { sheet } = result
 
-        const respond = (body: unknown, status = 200) => {
+        const rateLimit = checkRateLimit(sheet.apiKey)
+        const rlHeaders = {
+          'X-RateLimit-Limit': String(rateLimit.limit),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+          'X-RateLimit-Reset': String(rateLimit.reset),
+        }
+        const respond = (body: unknown, status = 200, extra: Record<string, string> = {}) => {
           void logRequest(sheet.id, 'DELETE', status).catch(() => {})
-          return json(body, status)
+          return json(body, status, { ...rlHeaders, ...extra })
         }
 
-        if (!checkRateLimit(sheet.apiKey)) return respond({ error: "Rate limit exceeded" }, 429)
+        if (!rateLimit.allowed) return respond({ error: "Rate limit exceeded" }, 429, { 'Retry-After': '60' })
 
         const accessToken = await getValidAccessToken(sheet.userId)
 

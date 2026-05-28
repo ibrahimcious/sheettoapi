@@ -4,13 +4,19 @@ const rateLimitMap = new Map<string, number[]>()
 const RATE_LIMIT_REQUESTS = 60
 const RATE_LIMIT_WINDOW_MS = 60_000
 
-export function checkRateLimit(apiKey: string): boolean {
+export function checkRateLimit(apiKey: string): { allowed: boolean; limit: number; remaining: number; reset: number } {
   const now = Date.now()
   const timestamps = (rateLimitMap.get(apiKey) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
-  if (timestamps.length >= RATE_LIMIT_REQUESTS) return false
-  timestamps.push(now)
-  rateLimitMap.set(apiKey, timestamps)
-  return true
+  const allowed = timestamps.length < RATE_LIMIT_REQUESTS
+  if (allowed) {
+    timestamps.push(now)
+    rateLimitMap.set(apiKey, timestamps)
+  }
+  const remaining = Math.max(0, RATE_LIMIT_REQUESTS - timestamps.length)
+  const reset = timestamps.length > 0
+    ? Math.ceil((timestamps[0] + RATE_LIMIT_WINDOW_MS) / 1000)
+    : Math.ceil((now + RATE_LIMIT_WINDOW_MS) / 1000)
+  return { allowed, limit: RATE_LIMIT_REQUESTS, remaining, reset }
 }
 
 export const corsHeaders = {
@@ -19,10 +25,10 @@ export const corsHeaders = {
   "Access-Control-Allow-Headers": "X-API-Key, Content-Type",
 }
 
-export function json(body: unknown, status = 200) {
+export function json(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
+    headers: { "Content-Type": "application/json", ...corsHeaders, ...extraHeaders },
   })
 }
 
