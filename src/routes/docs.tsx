@@ -38,12 +38,29 @@ function DocsPage() {
           <Code>X-API-Key: your-api-key</Code>
         </Section>
 
+        {/* Rate Limiting */}
+        <Section title="Rate limiting">
+          <p className="text-white/60 text-sm mb-3">
+            Each API key is limited to <span className="text-white font-mono">60 requests per minute</span>.
+            Every response includes headers so you can track usage proactively.
+          </p>
+          <ParamTable
+            title="Response headers"
+            params={[
+              { name: 'X-RateLimit-Limit', type: 'number', default: '60', desc: 'Max requests allowed per minute' },
+              { name: 'X-RateLimit-Remaining', type: 'number', default: '—', desc: 'Requests remaining in the current window' },
+              { name: 'X-RateLimit-Reset', type: 'number', default: '—', desc: 'Unix timestamp when the window resets' },
+              { name: 'Retry-After', type: 'number', default: '—', desc: 'Seconds to wait before retrying (429 only)' },
+            ]}
+          />
+        </Section>
+
         {/* GET */}
         <Section title="Get all rows">
           <EndpointBadge method="GET" path="/api/sheet/{slug}" />
           <p className="text-white/60 text-sm my-3">
             Returns rows from the connected sheet as a JSON array.
-            Supports pagination and filtering.
+            Supports pagination, sorting, and filtering.
           </p>
 
           <ParamTable
@@ -54,12 +71,22 @@ function DocsPage() {
               { name: 'sort', type: 'string', default: '—', desc: 'Column name to sort by' },
               { name: 'order', type: 'string', default: 'asc', desc: 'Sort direction: asc or desc' },
               { name: 'tab', type: 'string', default: 'first tab', desc: 'Sheet tab name' },
-              { name: '[column]', type: 'string', default: '—', desc: 'Filter by any column value' },
+              { name: 'search', type: 'string', default: '—', desc: 'Search across all column values (contains)' },
+              { name: '[column]', type: 'string', default: '—', desc: 'Exact match filter on a column' },
+              { name: '[column][contains]', type: 'string', default: '—', desc: 'Partial match filter on a column' },
             ]}
           />
 
           <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example request:</p>
-          <Code>{`curl ${BASE_URL}/api/sheet/my-slug?page=1&limit=5&Status=Published \\
+          <Code>{`curl "${BASE_URL}/api/sheet/my-slug?page=1&limit=5&Status=Published" \\
+  -H "X-API-Key: your-api-key"
+
+# Partial match on a column
+curl "${BASE_URL}/api/sheet/my-slug?Name[contains]=ali" \\
+  -H "X-API-Key: your-api-key"
+
+# Search across all columns
+curl "${BASE_URL}/api/sheet/my-slug?search=instagram" \\
   -H "X-API-Key: your-api-key"`}</Code>
 
           <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example response:</p>
@@ -159,6 +186,7 @@ function DocsPage() {
             <ErrorRow status="400" message="Invalid row number" desc="Row param is not a valid number" />
             <ErrorRow status="401" message="Invalid API key" desc="API key is missing or incorrect" />
             <ErrorRow status="404" message="Endpoint not found" desc="The slug does not exist" />
+            <ErrorRow status="429" message="Rate limit exceeded" desc="60 requests/min limit reached — check Retry-After header" />
             <ErrorRow status="502" message="Failed to fetch sheet data" desc="Google Sheets API returned an error" />
           </div>
         </Section>
@@ -236,7 +264,9 @@ function ParamTable({ title, params }: {
 }
 
 function ErrorRow({ status, message, desc }: { status: string; message: string; desc: string }) {
-  const color = parseInt(status) >= 500 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+  const code = parseInt(status)
+  const color = code >= 500 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+    : code === 429 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
     : 'bg-red-500/10 text-red-400 border-red-500/20'
   return (
     <div className="flex items-start gap-3 p-3 border border-white/7 rounded-lg">
