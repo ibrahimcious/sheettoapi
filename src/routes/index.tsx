@@ -43,6 +43,25 @@ function Home() {
         <HeroAnimation />
       </main>
       <section className="border-t border-white/7 px-8 py-16">
+        <div className="max-w-3xl mx-auto">
+          <p className="font-mono text-xs text-white/25 uppercase tracking-widest mb-10 text-center">How it works</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {[
+              { step: '01', title: 'Connect your sheet', desc: 'Sign in with Google and select any spreadsheet from your Drive.' },
+              { step: '02', title: 'Get your endpoint', desc: 'Copy the generated URL and API key from your dashboard. Ready instantly.' },
+              { step: '03', title: 'Start building', desc: 'Make GET, POST, PUT, and DELETE requests from any app, script, or browser.' },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="flex flex-col gap-3">
+                <span className="font-mono text-2xl font-bold text-white/10">{step}</span>
+                <h3 className="text-white font-semibold text-sm">{title}</h3>
+                <p className="text-white/40 text-sm leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-white/7 px-8 py-16">
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-10 gap-y-12">
           {features.map(f => (
             <div key={f.title} className="flex flex-col gap-3">

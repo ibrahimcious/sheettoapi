@@ -27,7 +27,15 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'SheetToAPI' },
+      { title: 'SheetToAPI — Turn Google Sheets into REST APIs' },
+      { name: 'description', content: 'Turn any Google Sheet into a REST API in seconds. Full CRUD, filtering, sorting, pagination, and rate limiting — no backend needed.' },
+      { property: 'og:title', content: 'SheetToAPI — Turn Google Sheets into REST APIs' },
+      { property: 'og:description', content: 'Turn any Google Sheet into a REST API in seconds. Full CRUD, filtering, sorting, pagination, and rate limiting — no backend needed.' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: 'https://sheettoapi.net' },
+      { name: 'twitter:card', content: 'summary' },
+      { name: 'twitter:title', content: 'SheetToAPI — Turn Google Sheets into REST APIs' },
+      { name: 'twitter:description', content: 'Turn any Google Sheet into a REST API in seconds. Full CRUD, filtering, sorting, pagination, and rate limiting — no backend needed.' },
     ],
     links: [
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
