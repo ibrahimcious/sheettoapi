@@ -41,7 +41,9 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const sortBy = url.searchParams.get("sort") ?? undefined
         const order = url.searchParams.get("order") === "desc" ? "desc" : "asc"
 
-        const reservedParams = ['page', 'limit', 'tab', 'sort', 'order', 'search']
+        const fields = url.searchParams.get("fields")?.split(",").map(f => f.trim()).filter(Boolean)
+
+        const reservedParams = ['page', 'limit', 'tab', 'sort', 'order', 'search', 'fields']
         const exactFilters: Record<string, string> = {}
         const containsFilters: Record<string, string> = {}
         const globalSearch = url.searchParams.get("search") ?? undefined
@@ -112,8 +114,14 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const start = (page - 1) * limit
         const paginatedRows = sortedRows.slice(start, start + limit)
 
+        const data = fields
+          ? paginatedRows.map(row => Object.fromEntries(
+              ['_row', ...fields].filter(f => f in row).map(f => [f, row[f]])
+            ))
+          : paginatedRows
+
         return respond({
-          data: paginatedRows,
+          data,
           pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
         })
       },

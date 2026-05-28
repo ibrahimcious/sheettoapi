@@ -93,6 +93,7 @@ function DocsPage() {
               { name: 'search', type: 'string', default: '—', desc: 'Search across all column values (contains)' },
               { name: '[column]', type: 'string', default: '—', desc: 'Exact match filter on a column' },
               { name: '[column][contains]', type: 'string', default: '—', desc: 'Partial match filter on a column' },
+              { name: 'fields', type: 'string', default: '—', desc: 'Comma-separated columns to return, e.g. name,email' },
             ]}
           />
 
