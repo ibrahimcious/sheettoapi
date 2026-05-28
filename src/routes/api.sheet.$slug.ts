@@ -41,10 +41,15 @@ export const Route = createFileRoute("/api/sheet/$slug")({
         const sortBy = url.searchParams.get("sort") ?? undefined
         const order = url.searchParams.get("order") === "desc" ? "desc" : "asc"
 
-        const reservedParams = ['page', 'limit', 'tab', 'sort', 'order']
-        const filters: Record<string, string> = {}
+        const reservedParams = ['page', 'limit', 'tab', 'sort', 'order', 'search']
+        const exactFilters: Record<string, string> = {}
+        const containsFilters: Record<string, string> = {}
+        const globalSearch = url.searchParams.get("search") ?? undefined
         url.searchParams.forEach((value, key) => {
-          if (!reservedParams.includes(key)) filters[key] = value
+          if (reservedParams.includes(key)) return
+          const containsKey = key.match(/^(.+)\[contains\]$/)
+          if (containsKey) containsFilters[containsKey[1]] = value
+          else exactFilters[key] = value
         })
 
         const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
@@ -81,13 +86,19 @@ export const Route = createFileRoute("/api/sheet/$slug")({
 
         const allRows = rowsToJson(data.values ?? [])
 
-        const filteredRows = Object.keys(filters).length > 0
-          ? allRows.filter(row =>
-            Object.entries(filters).every(([key, value]) =>
-              row[key]?.toLowerCase() === value.toLowerCase()
-            )
-          )
-          : allRows
+        const filteredRows = allRows.filter(row => {
+          if (globalSearch) {
+            const term = globalSearch.toLowerCase()
+            if (!Object.values(row).some(v => v.toLowerCase().includes(term))) return false
+          }
+          for (const [key, value] of Object.entries(exactFilters)) {
+            if (row[key]?.toLowerCase() !== value.toLowerCase()) return false
+          }
+          for (const [key, value] of Object.entries(containsFilters)) {
+            if (!row[key]?.toLowerCase().includes(value.toLowerCase())) return false
+          }
+          return true
+        })
 
         const sortedRows = sortBy
           ? [...filteredRows].sort((a, b) => {
