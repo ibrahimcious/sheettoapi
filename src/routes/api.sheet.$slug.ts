@@ -83,10 +83,10 @@ export const Route = createFileRoute("/api/sheet/$slug")({
 
         if (!response.ok) return respond({ error: "Failed to fetch sheet data" }, 502)
 
-        const data = await response.json()
-        if (data.error) return respond({ error: "Failed to fetch sheet data", detail: data.error.message }, 502)
+        const sheetData = await response.json()
+        if (sheetData.error) return respond({ error: "Failed to fetch sheet data", detail: sheetData.error.message }, 502)
 
-        const allRows = rowsToJson(data.values ?? [])
+        const allRows = rowsToJson(sheetData.values ?? [])
 
         const filteredRows = allRows.filter(row => {
           if (globalSearch) {
