@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { prisma } from "#/shared/lib/prisma"
-import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders, logRequest } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders, logRequest, checkRateLimit } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -56,6 +56,8 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           return json(body, status)
         }
 
+        if (!checkRateLimit(sheet.apiKey)) return respond({ error: "Rate limit exceeded" }, 429)
+
         await prisma.sheetConnection.update({
           where: { slug },
           data: { lastUsedAt: new Date() },
@@ -110,6 +112,8 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           void logRequest(sheet.id, 'POST', status).catch(() => {})
           return json(body, status)
         }
+
+        if (!checkRateLimit(sheet.apiKey)) return respond({ error: "Rate limit exceeded" }, 429)
 
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)

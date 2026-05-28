@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders, logRequest } from "#/modules/sheets/sheets.utils"
+import { getValidAccessToken, getFirstSheetTab, resolveSheet, json, corsHeaders, logRequest, checkRateLimit } from "#/modules/sheets/sheets.utils"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
@@ -25,6 +25,8 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           void logRequest(sheet.id, 'PUT', status).catch(() => {})
           return json(body, status)
         }
+
+        if (!checkRateLimit(sheet.apiKey)) return respond({ error: "Rate limit exceeded" }, 429)
 
         const body = await request.json()
         const accessToken = await getValidAccessToken(sheet.userId)
@@ -71,6 +73,8 @@ export const Route = createFileRoute("/api/sheet/$slug/$row")({
           void logRequest(sheet.id, 'DELETE', status).catch(() => {})
           return json(body, status)
         }
+
+        if (!checkRateLimit(sheet.apiKey)) return respond({ error: "Rate limit exceeded" }, 429)
 
         const accessToken = await getValidAccessToken(sheet.userId)
 

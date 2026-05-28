@@ -1,5 +1,18 @@
 import { prisma } from '#/shared/lib/prisma'
 
+const rateLimitMap = new Map<string, number[]>()
+const RATE_LIMIT_REQUESTS = 60
+const RATE_LIMIT_WINDOW_MS = 60_000
+
+export function checkRateLimit(apiKey: string): boolean {
+  const now = Date.now()
+  const timestamps = (rateLimitMap.get(apiKey) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+  if (timestamps.length >= RATE_LIMIT_REQUESTS) return false
+  timestamps.push(now)
+  rateLimitMap.set(apiKey, timestamps)
+  return true
+}
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
