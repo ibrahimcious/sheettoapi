@@ -51,8 +51,7 @@
     "vitest": "^4.1.5"
   },
   "pnpm": {
-    "allowBuild": [
-      "*"
-    ]
+    "allowBuild": ["*"],
+    "onlyBuiltDependencies": ["@prisma/engines", "prisma", "core-js", "protobufjs"]
   }
 }
