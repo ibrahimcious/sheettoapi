@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useRouter, Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn, rotateApiKeyFn, togglePublicFn } from '#/modules/sheets/sheets.api'
+import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn, rotateApiKeyFn, togglePublicFn, FREE_TIER_SHEET_LIMIT } from '#/modules/sheets/sheets.api'
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
 import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
@@ -160,9 +160,14 @@ export function RouteComponent() {
       <main className="flex-1 max-w-3xl mx-auto w-full px-8 py-12">
         {/* Connect a Sheet */}
         <section className="mb-12">
-          <h2 className="text-white font-bold text-3xl tracking-tight mb-2">
-            Connect a Sheet
-          </h2>
+          <div className="flex items-baseline justify-between mb-2">
+            <h2 className="text-white font-bold text-3xl tracking-tight">
+              Connect a Sheet
+            </h2>
+            <span className="text-white/30 text-xs font-mono">
+              {sheets.length} / {FREE_TIER_SHEET_LIMIT} sheets
+            </span>
+          </div>
           <p className="text-white/40 text-sm mb-6">
             Select a Google Sheet to create an API endpoint.
           </p>
@@ -214,11 +219,17 @@ export function RouteComponent() {
           <button
             type="button"
             onClick={handleConnect}
-            disabled={!selectedSheetId || isConnecting}
+            disabled={!selectedSheetId || isConnecting || sheets.length >= FREE_TIER_SHEET_LIMIT}
             className="font-mono text-sm font-semibold px-5 py-2.5 rounded-lg bg-green-400 text-black hover:bg-green-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isConnecting ? 'Connecting...' : 'Connect sheet'}
           </button>
+
+          {sheets.length >= FREE_TIER_SHEET_LIMIT && (
+            <p className="text-white/40 text-sm mt-3">
+              You've reached the free tier limit of {FREE_TIER_SHEET_LIMIT} sheets. Delete a sheet to connect a new one.
+            </p>
+          )}
 
           {error && (
             <p className="text-[#ff5577] text-sm mt-3">{error}</p>

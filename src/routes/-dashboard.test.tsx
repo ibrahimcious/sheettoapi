@@ -50,6 +50,7 @@ vi.mock('#/modules/sheets/sheets.api', () => ({
   getSheetTabsFn: mockGetSheetTabs,
   rotateApiKeyFn: mockRotateApiKey,
   togglePublicFn: mockTogglePublic,
+  FREE_TIER_SHEET_LIMIT: 3,
 }))
 
 import { RouteComponent } from './dashboard'

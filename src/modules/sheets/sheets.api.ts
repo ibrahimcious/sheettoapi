@@ -6,6 +6,8 @@ import { auth } from "#/modules/auth/auth.utils"
 import { getValidAccessToken } from "./sheets.utils"
 import z from "zod"
 
+export const FREE_TIER_SHEET_LIMIT = 3
+
 export const connectSheetFn = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .inputValidator(ConnectSheetSchema)
@@ -15,6 +17,11 @@ export const connectSheetFn = createServerFn({ method: "POST" })
 
     const session = await auth.api.getSession({ headers })
     if (!session) throw new Error("Unauthorized")
+
+    const count = await db.sheetConnection.count({ where: { userId: session.user.id } })
+    if (count >= FREE_TIER_SHEET_LIMIT) {
+      throw new Error(`Free tier limit reached. You can connect up to ${FREE_TIER_SHEET_LIMIT} sheets.`)
+    }
 
     const sheetId = extractSheetId(data.sheetUrl)
     const slug = generateSlug(data.sheetName)
