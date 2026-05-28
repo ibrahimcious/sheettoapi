@@ -8,6 +8,8 @@ import { Navbar } from '#/components/Navbar'
 
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
+  pendingComponent: DashboardSkeleton,
+  pendingMs: 300,
 
   beforeLoad: async () => {
     const session = await getSessionFn()
@@ -24,6 +26,48 @@ export const Route = createFileRoute('/dashboard')({
     return { sheets, userSheets, baseUrl }
   }
 })
+
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-white/[0.05] ${className ?? ''}`} />
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-canvas flex flex-col">
+      <Navbar right={
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-8" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+      } />
+      <main className="flex-1 max-w-3xl mx-auto w-full px-8 py-12">
+        <section className="mb-12">
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-64 mb-6" />
+          <div className="flex flex-col gap-2 mb-4">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-11" />)}
+          </div>
+          <Skeleton className="h-10 w-36" />
+        </section>
+        <section>
+          <Skeleton className="h-8 w-32 mb-6" />
+          <div className="flex flex-col gap-4">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <Skeleton className="h-6 w-40 mb-4" />
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-8" />
+                  <Skeleton className="h-8" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
