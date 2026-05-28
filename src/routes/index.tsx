@@ -9,8 +9,20 @@ const features = [
     description: 'GET, POST, PUT, and DELETE. Read rows, append new entries, update by row number, or delete permanently.',
   },
   {
-    title: 'Filter & paginate',
-    description: 'Query by any column value and paginate results with standard params — works like a real database API.',
+    title: 'Filter, search & sort',
+    description: 'Exact match, partial contains, and global search across all columns. Sort by any field, ascending or descending.',
+  },
+  {
+    title: 'Public endpoints',
+    description: 'Mark any sheet as public to allow read-only access without an API key — perfect for open data or static sites.',
+  },
+  {
+    title: 'Rate limiting',
+    description: 'Every key is capped at 60 requests per minute. Remaining quota and reset time are exposed as response headers.',
+  },
+  {
+    title: 'API key rotation',
+    description: 'Regenerate your API key any time from the dashboard. The old key stops working immediately.',
   },
   {
     title: 'No backend needed',
@@ -31,7 +43,7 @@ function Home() {
         <HeroAnimation />
       </main>
       <section className="border-t border-white/7 px-8 py-16">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-10">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-10 gap-y-12">
           {features.map(f => (
             <div key={f.title} className="flex flex-col gap-3">
               <div className="w-8 h-0.5 bg-green-400" />

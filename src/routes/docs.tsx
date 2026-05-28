@@ -38,6 +38,25 @@ function DocsPage() {
           <Code>X-API-Key: your-api-key</Code>
         </Section>
 
+        {/* Public endpoints */}
+        <Section title="Public endpoints">
+          <p className="text-white/60 text-sm mb-3">
+            By default, every request requires an <span className="text-white font-mono">X-API-Key</span> header.
+            You can mark any sheet as <span className="text-white">public</span> from the dashboard to allow
+            unauthenticated <span className="text-white font-mono">GET</span> requests — no API key needed.
+          </p>
+          <p className="text-white/60 text-sm mb-3">
+            Write operations (POST, PUT, DELETE) always require the API key, even on public sheets.
+          </p>
+          <div className="mt-3 p-3 bg-green-500/5 border border-green-500/15 rounded-lg">
+            <p className="text-green-400 text-xs font-mono">
+              To enable: open the dashboard, find your sheet, and click <span className="text-white">Make public</span>.
+            </p>
+          </div>
+          <p className="text-white/40 text-xs font-mono mt-4 mb-2">Example — public sheet, no API key:</p>
+          <Code>{`curl "${BASE_URL}/api/sheet/my-slug"`}</Code>
+        </Section>
+
         {/* Rate Limiting */}
         <Section title="Rate limiting">
           <p className="text-white/60 text-sm mb-3">
