@@ -15,4 +15,4 @@ RUN npx prisma generate
 RUN pnpm run build
 
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node .output/server/index.mjs"]
