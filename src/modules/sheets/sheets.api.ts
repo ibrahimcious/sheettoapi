@@ -66,6 +66,22 @@ export const deleteSheetFn = createServerFn({ method: "POST" })
     })
   })
 
+export const togglePublicFn = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .inputValidator(z.object({ id: z.string().min(1), isPublic: z.boolean() }))
+  .handler(async ({ context, data }) => {
+    const { db } = context
+    const headers = getRequestHeaders()
+
+    const session = await auth.api.getSession({ headers })
+    if (!session) throw new Error("Unauthorized")
+
+    return db.sheetConnection.update({
+      where: { id: data.id, userId: session.user.id },
+      data: { isPublic: data.isPublic },
+    })
+  })
+
 export const rotateApiKeyFn = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .inputValidator(DeleteSheetSchema)

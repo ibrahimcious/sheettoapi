@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useRouter, Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn, rotateApiKeyFn } from '#/modules/sheets/sheets.api'
+import { connectSheetFn, getMySheetsFn, deleteSheetFn, getUserSheetsFn, getSheetTabsFn, rotateApiKeyFn, togglePublicFn } from '#/modules/sheets/sheets.api'
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
 import { getSessionFn, logoutFn } from '#/modules/auth/auth.api'
@@ -41,6 +41,7 @@ export function RouteComponent() {
   const deleteSheet = useServerFn(deleteSheetFn)
   const getSheetTabs = useServerFn(getSheetTabsFn)
   const rotateApiKey = useServerFn(rotateApiKeyFn)
+  const togglePublic = useServerFn(togglePublicFn)
 
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState('')
@@ -50,6 +51,7 @@ export function RouteComponent() {
   const [selectedSheetName, setSelectedSheetName] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
   const [rotatingId, setRotatingId] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const { sheets, userSheets, baseUrl } = Route.useLoaderData()
   const session = Route.useRouteContext()
@@ -105,6 +107,16 @@ export function RouteComponent() {
       router.invalidate()
     } finally {
       setRotatingId(null)
+    }
+  }
+
+  async function handleTogglePublic(id: string, isPublic: boolean) {
+    setTogglingId(id)
+    try {
+      await togglePublic({ data: { id, isPublic } })
+      router.invalidate()
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -241,9 +253,16 @@ export function RouteComponent() {
                     </button>
                   </div>
 
-                  <p className="text-white/40 text-xs mb-4">
-                    Tab: {sheet.tabName || 'First tab'}
-                  </p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <p className="text-white/40 text-xs">
+                      Tab: {sheet.tabName || 'First tab'}
+                    </p>
+                    {sheet.isPublic && (
+                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded border bg-green-500/10 text-green-400 border-green-500/20">
+                        Public
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
@@ -279,6 +298,18 @@ export function RouteComponent() {
                         className="text-xs font-medium text-white/30 hover:text-white/60 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {rotatingId === sheet.id ? 'Rotating...' : 'Rotate'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublic(sheet.id, !sheet.isPublic)}
+                        disabled={togglingId === sheet.id}
+                        className={`text-xs font-medium transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                          sheet.isPublic
+                            ? 'text-green-400 hover:text-green-300'
+                            : 'text-white/30 hover:text-white/60'
+                        }`}
+                      >
+                        {togglingId === sheet.id ? '...' : sheet.isPublic ? 'Make private' : 'Make public'}
                       </button>
                     </div>
                   </div>

@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/sheet/$slug")({
           else exactFilters[key] = value
         })
 
-        const result = await resolveSheet(slug, request.headers.get("X-API-Key"))
+        const result = await resolveSheet(slug, request.headers.get("X-API-Key"), true)
         if (!result.ok) return result.response
         const { sheet } = result
 

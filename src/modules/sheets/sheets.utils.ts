@@ -95,9 +95,11 @@ export async function logRequest(sheetConnectionId: string, method: string, stat
   }
 }
 
-export async function resolveSheet(slug: string, apiKey: string | null) {
+export async function resolveSheet(slug: string, apiKey: string | null, allowPublic = false) {
   const sheet = await prisma.sheetConnection.findUnique({ where: { slug } })
   if (!sheet) return { ok: false as const, response: json({ error: "Endpoint not found" }, 404) }
-  if (!apiKey || apiKey !== sheet.apiKey) return { ok: false as const, response: json({ error: "Invalid API key" }, 401) }
+  if (!(allowPublic && sheet.isPublic) && (!apiKey || apiKey !== sheet.apiKey)) {
+    return { ok: false as const, response: json({ error: "Invalid API key" }, 401) }
+  }
   return { ok: true as const, sheet }
 }

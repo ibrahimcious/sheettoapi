@@ -10,6 +10,7 @@ const {
   mockConnectSheet,
   mockGetSheetTabs,
   mockRotateApiKey,
+  mockTogglePublic,
 } = vi.hoisted(() => ({
   mockInvalidate: vi.fn(),
   mockUseLoaderData: vi.fn(),
@@ -18,6 +19,7 @@ const {
   mockConnectSheet: vi.fn(),
   mockGetSheetTabs: vi.fn(),
   mockRotateApiKey: vi.fn(),
+  mockTogglePublic: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-router', () => ({
@@ -47,6 +49,7 @@ vi.mock('#/modules/sheets/sheets.api', () => ({
   getUserSheetsFn: vi.fn(),
   getSheetTabsFn: mockGetSheetTabs,
   rotateApiKeyFn: mockRotateApiKey,
+  togglePublicFn: mockTogglePublic,
 }))
 
 import { RouteComponent } from './dashboard'
@@ -65,6 +68,7 @@ const makeSheet = (overrides = {}) => ({
   userId: 'u1',
   sheetId: 'gid-budget',
   createdAt: new Date(),
+  isPublic: false,
   logs: [] as { id: string; method: string; status: number; createdAt: Date }[],
   _count: { logs: 0 },
   ...overrides,
@@ -97,6 +101,7 @@ describe('RouteComponent (dashboard)', () => {
     mockConnectSheet.mockResolvedValue(undefined)
     mockGetSheetTabs.mockResolvedValue(['Sheet1', 'Sheet2', 'Data'])
     mockRotateApiKey.mockResolvedValue(undefined)
+    mockTogglePublic.mockResolvedValue(undefined)
     mockInvalidate.mockReset()
   })
 

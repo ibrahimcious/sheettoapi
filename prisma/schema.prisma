@@ -20,6 +20,7 @@ model SheetConnection {
   slug       String    @unique
   apiKey     String    @unique @default(uuid())
   tabName    String    @default("") // "" means use first tab
+  isPublic   Boolean   @default(false)
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 
