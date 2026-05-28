@@ -1,0 +1,53 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0f"/>
+
+  <!-- Subtle radial glow -->
+  <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+    <stop offset="0%" stop-color="#4ade80" stop-opacity="0.07"/>
+    <stop offset="100%" stop-color="#0a0a0f" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Top border accent -->
+  <rect width="1200" height="2" fill="#4ade80" opacity="0.6"/>
+
+  <!-- Live dot + label -->
+  <circle cx="562" cy="192" r="5" fill="#4ade80">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="576" y="197" font-family="monospace" font-size="14" fill="#4ade80" letter-spacing="0.5">Live API</text>
+
+  <!-- Main headline -->
+  <text x="600" y="280" font-family="monospace" font-size="80" font-weight="700" fill="white" text-anchor="middle" letter-spacing="-2">SheetToAPI</text>
+
+  <!-- Tagline -->
+  <text x="600" y="338" font-family="monospace" font-size="22" fill="rgba(255,255,255,0.4)" text-anchor="middle">Turn any Google Sheet into a REST API in seconds</text>
+
+  <!-- Endpoint bar -->
+  <rect x="240" y="386" width="720" height="62" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <!-- GET badge -->
+  <rect x="260" y="404" width="46" height="26" rx="6" fill="rgba(74,222,128,0.12)" stroke="rgba(74,222,128,0.25)" stroke-width="1"/>
+  <text x="283" y="422" font-family="monospace" font-size="13" font-weight="700" fill="#4ade80" text-anchor="middle">GET</text>
+  <!-- URL -->
+  <text x="322" y="422" font-family="monospace" font-size="15" fill="rgba(255,255,255,0.25)">sheettoapi.net/api/sheet/</text>
+  <text x="660" y="422" font-family="monospace" font-size="15" fill="#4ade80">my-slug</text>
+  <!-- Status -->
+  <text x="910" y="422" font-family="monospace" font-size="13" fill="#4ade80" text-anchor="end">● 200 OK</text>
+
+  <!-- Feature pills -->
+  <rect x="240" y="480" width="108" height="30" rx="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="294" y="500" font-family="monospace" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">Full CRUD</text>
+
+  <rect x="360" y="480" width="136" height="30" rx="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="428" y="500" font-family="monospace" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">Filter &amp; Search</text>
+
+  <rect x="508" y="480" width="128" height="30" rx="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="572" y="500" font-family="monospace" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">Rate Limiting</text>
+
+  <rect x="648" y="480" width="144" height="30" rx="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="720" y="500" font-family="monospace" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">No Backend Needed</text>
+
+  <rect x="804" y="480" width="156" height="30" rx="15" fill="rgba(74,222,128,0.08)" stroke="rgba(74,222,128,0.15)" stroke-width="1"/>
+  <text x="882" y="500" font-family="monospace" font-size="12" fill="#4ade80" text-anchor="middle">Free to get started</text>
+</svg>
